@@ -1,3 +1,5 @@
 venv/
 .cache/
 __pycache__/
+
+fieldtools.egg-info

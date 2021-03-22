@@ -6,11 +6,41 @@ renv::load(project = "/home/nilomr/projects/great-tit-song")
 setwd("/home/nilomr/projects/great-tit-song")
 options(warn=-1)
 options(readr.num_columns = 0)
-print('Making and saving plots')
+# print('Making and saving plots')
+
+# Libraries
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(devtools)
+  library(lubridate)
+  library(janitor)
+  library(ggrepel)
+  library(RColorBrewer) #?
+  library(sjPlot) #?
+})
 
 
-# Source file
-source("./src/greti/viz/plot-new-gretis.R")
+# --------------------------------------------------------------------------
+# PATHS
+# --------------------------------------------------------------------------
+
+data_path <- file.path(getwd(), "resources", "brood_data")
+sheet_path <- file.path(getwd(), "resources", "fieldwork", year(today()))
+figures_path <- file.path(getwd(), "resources", "fieldwork", year(today()))
+
+
+if (!dir.exists(data_path)) {
+  dir.create(data_path, recursive = TRUE)
+}
+
+if (!dir.exists(sheet_path)) {
+  dir.create(sheet_path, recursive = TRUE)
+}
+
+if (!dir.exists(figures_path)) {
+  dir.create(figures_path, recursive = TRUE)
+}
+
 
 
 # 2. Nestboxes to be recorded ====
