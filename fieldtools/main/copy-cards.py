@@ -10,18 +10,18 @@ import shutil
 from subprocess import PIPE, Popen, check_output
 import time
 from datetime import datetime
-
 import pandas as pd
 import psutil
 from colorama import Back, Fore, Style, init
 from pathlib2 import Path, PosixPath
 
-from fieldwork_paths import DATA_DIR, OUT_DIR, PROJECT_DIR, safe_makedir
+from fieldtools.src.paths import DATA_DIR, OUT_DIR, PROJECT_DIR, safe_makedir
 
 init(autoreset=True)
 
 # Settings
-open_origin_window = False  # Wether to open a nautilus window
+open_origin_window = False  # Whether to open a nautilus window
+verbose = False  # Whether
 
 # Names to listen for (here AM codes)
 AM_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")
@@ -114,7 +114,7 @@ def fetch_recorder_info(recorders_dir):
         recorders_dir).query('Nestbox != "Nestbox"')
     # Stop if no info on file
     if len(recorders_info) == 0:
-        raise IndexError(f'{recorders_dir.name} is empty')
+        print(IndexError(f'{recorders_dir.name} is empty'))
 
     recorders_info['Deployed'] = pd.to_datetime(
         recorders_info['Deployed'], format='%Y-%m-%d')
@@ -445,10 +445,10 @@ while True:
                     print('There is no RT file in this faceplate card, skipping')
                     continue
                 # Get first date in faceplate
-                f_datetime = pd.to_datetime(data['Date']).to_list()[0].date()
+                f_datetime = pd.to_datetime(data['Date']).to_list()[-1].date()
 
                 # Out folder name
-                faceplate_out = OUT_DIR / 'faceplates' / 'test' / \
+                faceplate_out = OUT_DIR / 'faceplates' / \
                     f'{str(f_datetime)}_{card[1]}'
 
             else:
@@ -459,6 +459,7 @@ while True:
                 # Skip card if there are no files
                 if len(files) == 0:
                     print(f'Card {card[1]} seems to be empty, skipping.')
+                    already_done.append(card[1])
                     continue
 
                 # get AM number
@@ -519,9 +520,11 @@ while True:
 
             while os.path.exists(card[0]):
                 umount_and_rmdir(password, card)
-                print('Unmounting card')
+                if verbose:
+                    print('Trying to umount again')
 
             print(yellow + f'Done with {card[1]}. It is now safe to remove.\n')
 
-    already_done = mounted
+            already_done.append(card[1])
+
     time.sleep(1)

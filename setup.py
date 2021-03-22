@@ -4,13 +4,6 @@ import sys
 
 _here = os.path.abspath(os.path.dirname(__file__))
 
-if sys.version_info[0] < 3:
-    with open(os.path.join(_here, 'README.rst')) as f:
-        long_description = f.read()
-else:
-    with open(os.path.join(_here, 'README.rst'), encoding='utf-8') as f:
-        long_description = f.read()
-
 version = {}
 with open(os.path.join(_here, 'fieldtools', 'version.py')) as f:
     exec(f.read(), version)
@@ -19,7 +12,6 @@ setup(
     name='fieldtools',
     version=version['__version__'],
     description=('Command-line tools to help with bioacoustics fieldwork'),
-    long_description=long_description,
     author='Nilo M. Recalde',
     url='https://github.com/nilomr/fieldtools',
     license='MIT',
