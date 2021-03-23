@@ -3,3 +3,7 @@ venv/
 __pycache__/
 
 fieldtools.egg-info
+.vscode
+dist
+dist/
+build/

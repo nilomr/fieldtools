@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import os
 import sys
 
@@ -15,16 +15,9 @@ setup(
     author='Nilo M. Recalde',
     url='https://github.com/nilomr/fieldtools',
     license='MIT',
-    packages=['fieldtools'],
-#   no dependencies in this example
-#   install_requires=[
-#       'dependency==1.2.3',
-#   ],
-#   no scripts in this example
-#   scripts=['bin/a-script'],
+    packages=find_packages(),
     include_package_data=True,
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3.8'],
-    )
+)

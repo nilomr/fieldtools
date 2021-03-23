@@ -20,16 +20,13 @@ from PyInquirer import prompt
 from tqdm.auto import tqdm
 from tabulate import tabulate
 
-
-from fieldwork_paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
-                             safe_makedir)
-from aes import tstyle, tcolor, arrow, info, menu_aes
-
+from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
+                                  safe_makedir)
+from fieldtools.src.aesthetics import tstyle, tcolor, arrow, info, menu_aes, build_logo
+from fieldtools.version import __version__
 init(autoreset=True)
 
 # Paths -----------------------------------
-
-version = '0.1.0'  # TODO: get this from setup file
 
 FIELD_DIR = DATA_DIR / "resources" / "fieldwork" / str(date.today().year)
 # Might want to save to FIELD_DIR instead for easy backup
@@ -304,27 +301,10 @@ for path in [OUT_DIR, FIELD_DIR]:
     safe_makedir(path)
 
 
-output = render('Fieldwork helper_', colors=[
-                f'#{tstyle.mustard}', f'#{tstyle.teal}'],
-                align='left', font='tiny',
-                space=False, letter_spacing=1,
-                line_height=10, max_length=10)
-print(tcolor("""
-                                      #&#&#&  
-                                    @@@@@&&&%     
-                                 *@@  ,#@@@@@/%> 
-                             ,/(//@@@.     @@&    
-                           (##/##(#(%..*@@@@&     
-                      (,#,.%#(%((..,,,....&@&     
-                   /,%,%/,@&/&%(****,.....&&.     
-              _,%&&&&%((//////*****,,.....@.      
-     _-_,((##, .*,*,***/****,******,....&&        
-                      *(*****,,**,../&           
-                            /*(%/                     
-                             #  #                   
-                           *-$%~-%=-           """, tstyle.teal))
-print(output.replace('\x01', '').replace(' \x1b', '\x1b'))
-print(tstyle.BOLD + tcolor(f' version {version}\n', tstyle.teal))
+# Print logo
+logo_text = 'Fieldwork helper_'
+font = 'tiny'
+build_logo(__version__, logo_text, font)
 
 while True:
 
