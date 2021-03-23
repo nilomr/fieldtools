@@ -1,27 +1,28 @@
 #!/usr/bin/env python3
 
-from sh import mount
-import glob
-import inspect
-import re
-from getpass import getpass, getuser
-import os
-import shutil
-from subprocess import PIPE, Popen, check_output
-import time
-from datetime import datetime
-import pandas as pd
-import psutil
-from colorama import Back, Fore, Style, init
+from fieldtools.version import __version__
 from pathlib2 import Path, PosixPath
-
+from colorama import Back, Fore, Style, init
+import psutil
+import pandas as pd
+from datetime import datetime
+import time
+from subprocess import PIPE, Popen, check_output
+import shutil
+import os
+from getpass import getpass, getuser
+import re
+import inspect
+import glob
+from sh import mount
 from fieldtools.src.paths import DATA_DIR, OUT_DIR, PROJECT_DIR, safe_makedir
+
 
 init(autoreset=True)
 
 # Settings
 open_origin_window = False  # Whether to open a nautilus window
-verbose = False  # Whether
+verbose = False  # Whether to print errors for debugging
 
 # Names to listen for (here AM codes)
 AM_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")

@@ -15,7 +15,7 @@ import git
 
 # Define directories:
 
-PROJECT_DIR = Path(__file__).parents[3]
+PROJECT_DIR = Path(__file__).parents[2]
 
 DATA_DIR = PROJECT_DIR / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"

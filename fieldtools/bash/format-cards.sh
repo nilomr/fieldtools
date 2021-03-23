@@ -1,5 +1,5 @@
 #!/bin/bash
-source activate wytham-fieldwork 
-cd "$(dirname "${BASH_SOURCE[0]}")"
+source activate fieldtools-env 
+cd $(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 source paths.sh
 python $pyformatcards
