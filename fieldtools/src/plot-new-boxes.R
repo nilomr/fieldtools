@@ -15,8 +15,8 @@ suppressPackageStartupMessages({
   library(lubridate)
   library(janitor)
   library(ggrepel)
-  library(RColorBrewer) #?
-  library(sjPlot) #?
+  library(ggmap)
+  library(ggtext)
 })
 
 
@@ -24,24 +24,15 @@ suppressPackageStartupMessages({
 # PATHS
 # --------------------------------------------------------------------------
 
-data_path <- file.path(getwd(), "resources", "brood_data")
 sheet_path <- file.path(getwd(), "resources", "fieldwork", year(today()))
 figures_path <- file.path(getwd(), "resources", "fieldwork", year(today()))
-
-
-if (!dir.exists(data_path)) {
-  dir.create(data_path, recursive = TRUE)
-}
 
 if (!dir.exists(sheet_path)) {
   dir.create(sheet_path, recursive = TRUE)
 }
-
 if (!dir.exists(figures_path)) {
   dir.create(figures_path, recursive = TRUE)
 }
-
-
 
 # 2. Nestboxes to be recorded ====
 
@@ -137,9 +128,9 @@ now <- gsub('.{3}$', '', now(tzone = "UTC"))
 
 subtitle <- paste(
   nrow(recorded),
-  "nestboxes <b style='color:#e09200'>recorded</b> and",
+  "nestboxes <b style='color:#4184b0'>recorded</b> and",
   nrow(newones),
-  "<b style='color:#4184b0'>to be recorded</b>",
+  "<b style='color:#e09200'>to be recorded</b>",
   "as of",
   now,
   sep = " "
@@ -197,7 +188,5 @@ ggsave(
   units = "cm",
   dpi = 350
 )
-
-print("Done!")
 
 rm(list = ls())

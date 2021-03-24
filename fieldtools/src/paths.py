@@ -1,26 +1,27 @@
 # This script stores paths in variables and makes directories if they don't exist
 
 # Libraries
-
-import glob
 import os
 from datetime import date
-from os import fspath
-import numpy as np
-import pandas as pd
 import pathlib2
 from pathlib2 import Path
-import git
 
 
 # Define directories:
 
-PROJECT_DIR = Path(__file__).parents[2]
+# If you want to use this folder:
+# PROJECT_DIR = Path(__file__).parents[2]
 
+# Else use any project as your data source / destination, independently of the CLI apps directory
+# TODO: get this from higher level user settings
+# Also change in src/plot-new-boxes.R
+PROJECT_DIR = Path('/home/nilomr/projects/great-tit-song')
+
+# Subdirs
 DATA_DIR = PROJECT_DIR / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
 RESOURCES_DIR = PROJECT_DIR / "resources"
-EGO_DIR = PROJECT_DIR / 'src' / 'greti' / 'fieldwork'
+EGO_DIR = Path(__file__).parents[2] / 'fieldtools' / 'src'
 OUT_DIR = PROJECT_DIR / "resources" / "fieldwork" / str(date.today().year)
 
 # ----------------------
