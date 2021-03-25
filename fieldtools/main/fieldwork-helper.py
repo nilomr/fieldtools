@@ -16,7 +16,7 @@ from cfonts.consts import FONTFACES
 from colorama import Back, Fore, Style, init
 from fieldtools.src.aesthetics import (arrow, build_logo, info, menu_aes, print_dict, qmark,
                                        tcolor, tstyle, asterbar)
-from fieldtools.src.funs import get_nestbox_update, get_recorded_gretis, order, reconstruct_path, split_path, write_gpx, yes_or_no
+from fieldtools.src.funs import get_faceplate_update, get_nestbox_update, get_recorded_gretis, order, reconstruct_path, split_path, write_gpx, yes_or_no
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
                                   safe_makedir)
 from fieldtools.version import __version__
@@ -190,10 +190,11 @@ while True:
               )
         continue
 
-    elif answer == 'Get a progress report':  # get nestboxes to be visited
+    elif answer == 'Get a progress report':  # * get nestboxes to be visited
 
         # Get updated list of nestboxes from google sheets
-        which_greati = get_nestbox_update().replace('nan', 0).fillna(0)
+        which_greati = get_nestbox_update().replace(
+            'nan', 0).fillna(0).replace('n/a', 0)
 
         already_recorded, diff_df = get_recorded_gretis(
             recorded_csv, nestbox_coords, which_greati)
@@ -212,7 +213,8 @@ while True:
         # Fix and print new great tit data
         table_p = diff_df.drop(["longitude", "latitude", 'x', 'y', 'nestbox',
                                 'box type', 'Added'], 1).rename(columns={"section": "Section"})
-        print(tabulate(table_p, headers="keys"))
+        print(' '.join(
+            tabulate(table_p, headers="keys", showindex=False).splitlines()))
 
         # Save to a .csv
         newpath = OUT_DIR / str("new_" + str(date.today()) + ".csv")

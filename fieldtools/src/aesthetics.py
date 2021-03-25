@@ -16,19 +16,19 @@ def build_logo(version, logo_text, font):
         space=False, letter_spacing=1,
         line_height=0, max_length=0)
     print(tcolor("""
-                                      #&#&#&  
-                                    @@@@@&&&%     
-                                 *@@  ,#@@@@@/%> 
-                             ,/(//@@@.     @@&    
-                           (##/##(#(%..*@@@@&     
-                      (,#,.%#(%((..,,,....&@&     
-                   /,%,%/,@&/&%(****,.....&&.     
-              _,%&&&&%((//////*****,,.....@.      
-     _-_,((##, .*,*,***/****,******,....&&        
-                      *(*****,,**,../&           
-                            /*(%/                     
-                             #  #                   
-                           *-$%~-%=-           """, tstyle.teal))
+                                   #&#&#&  
+                                 @@@@@&&&%     
+                              *@@  ,#@@@@@/%> 
+                          ,/(//@@@.     @@&    
+                        (##/##(#(%..*@@@@&     
+                   (,#,.%#(%((..,,,....&@&     
+                /,%,%/,@&/&%(****,.....&&.     
+           _,%&&&&%((//////*****,,.....@.      
+  _-_,((##, .*,*,***/****,******,....&&        
+                   *(*****,,**,../&           
+                         /*(%/                     
+                          #  #                   
+                        *-$%~-%=-           """, tstyle.teal))
     print(output.replace('\x01', '').replace(' \x1b', '\x1b'))
     print(tstyle.BOLD + tcolor(f' version {version}', tstyle.teal))
 
@@ -51,8 +51,8 @@ class tstyle:
     rojoroto = 'c94a40'
 
 
-arrow = tstyle.BOLD + tcolor(' > ', tstyle.mustard)
-info = tstyle.BOLD + tcolor(' i ', tstyle.mustard)
+arrow = tstyle.BOLD + tcolor('> ', tstyle.mustard)
+info = tstyle.BOLD + tcolor('i ', tstyle.mustard)
 qmark = tstyle.BOLD + tcolor('? ', tstyle.mustard)
 
 
