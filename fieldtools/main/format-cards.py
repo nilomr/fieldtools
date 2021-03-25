@@ -2,27 +2,23 @@
 
 # TODO: mount any unmounted volumes automatically?
 
-import inspect
+
 import os
-import re
-import shutil
-import subprocess
 import time
 from datetime import datetime
-from getpass import getpass, getuser
-from subprocess import PIPE, Popen, check_output
-
-import pandas as pd
+from subprocess import PIPE, Popen
 import psutil
-from colorama import Back, Fore, Style, init
-from pathlib2 import Path, PosixPath
-
-from fieldwork_paths import DATA_DIR, OUT_DIR, PROJECT_DIR, safe_makedir
-
-init(autoreset=True)
+from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
+                                       qmark, tcolor, tstyle)
+from fieldtools.src.funs import (clean_vols, ensure_mount, find_sdiskpart,
+                                 get_mountedlist, get_wav_filenames,
+                                 is_faceplate, umount_and_rmdir)
+from fieldtools.src.paths import OUT_DIR, PROJECT_DIR, safe_makedir
+from fieldtools.version import __version__
+from pathlib2 import Path
 
 # Settings
-skip_empty = False  # Wether to open a nautilus window
+skip_empty = False  # Wether to skip already empty cards
 safe_copy = False  # Wether to ensure that files exist before allowing formatting
 
 # Names to listen for (here AM codes)
@@ -42,190 +38,46 @@ destination_directory = PROJECT_DIR
 recorders_dir = PROJECT_DIR / 'resources' / 'fieldwork' / \
     str(datetime.now().year) / 'already-recorded.csv'
 
-# Colours
-red = Fore.RED + Style.BRIGHT
-yellow = Fore.YELLOW + Style.BRIGHT
-green = Fore.WHITE + Back.GREEN + Style.BRIGHT
 
-# --
+# Main
 
 
-def get_mountedlist():
-    return [card[card.find("/"):] for card in subprocess.check_output(
-            ["/bin/bash", "-c", "lsblk"]).decode("utf-8").split("\n") if "/" in card]
+# Make sure paths exist
+for path in [OUT_DIR]:
+    safe_makedir(path)
 
-
-def is_faceplate(dev):
-    try:
-        nm = Path(dev).name
-        if nm[0] == 'F' and len(nm) == 5 and nm[1:4].isnumeric():
-            return True
-        else:
-            return False
-    except:
-        return False
-
-
-def yes_or_no(question):
-    while "The answer is invalid":
-        reply = str(input(question + " [y/n]: ")).lower().strip()
-        if reply[0] == "y":
-            return True
-        elif reply[0] == "n":
-            return False
-        else:
-            print("The answer is invalid")
-
-
-bar = [
-    "|     ",
-    " |    ",
-    "  |   ",
-    "   |  ",
-    "    | ",
-    "     |",
-    "    | ",
-    "   |  ",
-    "  |   ",
-    " |    ",
-]
-
-
-def find_sdiskpart(path):
-    path = os.path.abspath(path)
-    while not os.path.ismount(path):
-        path = os.path.dirname(path)
-    p = [p for p in psutil.disk_partitions(
-        all=True) if p.mountpoint == path.__str__()]
-    l = len(p)
-    if len(p) == 1:
-        return p[0]
-    raise psutil.Error
-
-
-def get_wav_filenames(card):
-    return [os.sep.join(os.path.normpath(file).split(os.sep)[-2:])
-            for file in [os.path.join(card[0], i)
-                         for i in os.listdir(card[0])
-                         if i.endswith('.WAV')]
-            ]
-
-
-def parse_blkid(valid_directories, output):
-    valid_devices = []
-    output = [str(i).split(' ') for i in output.split(b'\n') if b'LABEL' in i]
-    for ls in output:
-        for sbls in ls:
-            if sbls.startswith('LABEL'):
-                name = re.findall(r'"(.*?)"', sbls)[0]
-                if (
-                    name[0] == 'F' and len(name) == 5 and
-                    name[1:4].isnumeric() or
-                    name in [am[0] for am in valid_directories]
-                ):
-                    devpath = str(ls[0]).replace(
-                        ':', '').replace('b\'', '')
-                    valid_devices.append([name, devpath])
-    return valid_devices
-
-
-def ensure_mount(valid_directories, password, checked_cards, already_done):
-    devnull = open(os.devnull, 'wb')
-    mounted = get_mountedlist()
-    blkid = "sudo blkid"
-    proc1 = Popen(["/bin/bash", "-c", blkid],
-                  stdin=PIPE, stdout=PIPE)
-    output, err = proc1.communicate(input=password.encode())
-    valid_devices = parse_blkid(valid_directories, output)
-    if not valid_devices:
-        pass
-    else:
-        for dev in valid_devices:
-            if any(dev[0] in s for s in mounted):
-                continue
-            elif dev[0] in already_done:
-                continue
-            else:
-                # Mkdir
-                target_dir = os.path.join(os.sep, 'media', getuser(), dev[0])
-                mkdir = f"sudo mkdir -p {target_dir}"
-                proc2 = Popen(["/bin/bash", "-c", mkdir],
-                              stdin=PIPE, stdout=PIPE, stderr=devnull)
-                out2, err2 = proc2.communicate(password.encode())
-                # Mount
-                dmount = f"sudo mount {dev[1]} {target_dir}"
-                proc3 = Popen(["/bin/bash", "-c", dmount],
-                              stdin=PIPE, stdout=PIPE, stderr=devnull)
-                out3, err3 = proc3.communicate(password.encode())
-                checked_cards.append(dev[0])
-    return checked_cards
-
-
-def umount_and_rmdir(password, card):
-    devnull = open(os.devnull, 'wb')
-    umount = f"sudo umount {card[0]}"
-    proc4 = Popen(["/bin/bash", "-c", umount],
-                  stdin=PIPE, stdout=PIPE, stderr=devnull)
-    proc4.communicate(password.encode())
-    # Delete mount point
-    delmount = f"sudo rmdir {card[0]}"
-    proc5 = Popen(["/bin/bash", "-c", delmount],
-                  stdin=PIPE, stdout=PIPE, stderr=devnull)
-    proc5.communicate(password.encode())
-    # print(f'delete mountpoint returned {proc5.returncode}')
-
-# Main -------------------------------------
-
-
-print("""
-                                  ,,,,
-                                %@%&@&%                         
-                              *@,    .*                         
-                           //((((##,,,                          
-                      ,(%#(,&%((#(/,,,                          
-                   /((%(%###%&&%.,,,,                           
-            ,  *(///.  .,**,..,,,,,,                             
-        (/,            . . ,#,.                                 
- ___ ___    ___            ./. /  _   _ 
-/ __|   \  | __|__ _ _ _ __  _* _| |_| |_ ___ _ _ 
-\__ \ |) | | _/ _ \ '_| '  \/ _` |  _|  _/ -_) '_|
-|___/___/  |_|\___/_| |_|_|_\__,_|\__|\__\___|_|  
-""")
-
-print(red + """
-Warning: This application will automatically format any 
-mounted volume with names matching a given pattern, 
-currently [AM00, F0000]. USE AT YOUR OWN RISK
-""")
-
-while True:
-    # some code here
-    if yes_or_no('Do you want to continue?'):
-        break
-    else:
-        quit()
-
-# Get password from user
-if 'password' not in locals():
-    password = getpass("Please enter your password: ")
-
-it = 0
+# Print logo
+build_logo(__version__, logo_text='SD Card Wiper_', font='tiny')
+print(
+    tcolor("""
+ = USE AT YOUR OWN RISK =
+ This application will automatically format
+ any mounted volume with names matching a given
+ pattern, currently [AM00, F0000].
+""", tstyle.rojoroto)
+)
 
 # Store volumes that have been already formatted
 already_done = []
 checked_cards = []
 devnull = open(os.devnull, 'wb')
 
+# Clean any mounted volumes
+clean_vols()
+
+# Counter (for progress bar)
+it = 0
 
 while True:
-    print('Scanning for cards', bar[it % len(bar)], end="\r")
+    print(arrow + tcolor('Scanning for cards',
+                         tstyle.lightgrey), asterbar[it % len(asterbar)], end="\r")
     time.sleep(.1)
     it += 1
 
     # Mount any cards not already mounted
     # (sometimes automount does not work)
     checked_cards = ensure_mount(
-        valid_directories, password, checked_cards, already_done)
+        valid_directories, 0, checked_cards, already_done)
 
     # Now get all valid mounted cards
     mounted = get_mountedlist()
@@ -244,7 +96,8 @@ while True:
             if card[1] in already_done:
                 continue
 
-            print(yellow + '\n' + f'Trying to format {card[1]} ...')
+            print(
+                tcolor('\n' + f'Trying to format {card[1]} ...', tstyle.mustard))
 
             # List files in card
             files = [os.path.join(card[0], i)
@@ -266,15 +119,16 @@ while True:
                             copied_list = [filedir.rstrip()
                                            for filedir in cp]
                         if not set(wav_files).issubset(copied_list):
-                            print(
-                                f'One or more files in {card[1]} have not yet been copied, skipping')
+                            print(info +
+                                  f'One or more files in {card[1]} have not yet been copied, skipping')
                             continue
                     except:
                         if (OUT_DIR / 'copied.txt').is_file():
-                            print('There is an issue with /copied.txt, skipping.')
-                        else:
                             print(
-                                '/copied.txt not found, use the `copy-cards` app at least once. Skipping')
+                                info + tcolor('There is an issue with /copied.txt, skipping.'), tstyle.rojoroto)
+                        else:
+                            print(info +
+                                  tcolor('/copied.txt not found, use the `copy-cards` app at least once. Skipping', tstyle.rojoroto))
                         continue
 
             # Get volume name
@@ -287,31 +141,32 @@ while True:
             umount = f"sudo umount -l {p.device}*"
             proc1 = Popen(["/bin/bash", "-c", umount],
                           stdin=PIPE, stdout=PIPE, stderr=devnull)
-            proc1.communicate(password.encode())
+            proc1.communicate()
 
             # Format card
             format = f"sudo mkfs.vfat -F32 -v {p.device}"
             proc2 = Popen(["/bin/bash", "-c", format],
-                          stdin=PIPE, stdout=PIPE, stderr=devnull)
-            proc2.communicate(password.encode())
+                          stdin=PIPE, stdout=PIPE)
+            oin, oout = proc2.communicate()
 
             # Rename card
             relabel = f"sudo fatlabel {p.device} {card[1]}"
             proc3 = Popen(["/bin/bash", "-c", relabel],
                           stdin=PIPE, stdout=PIPE, stderr=devnull)
-            proc3.communicate(password.encode())
-
-            umount_and_rmdir(password, card)
+            proc3.communicate()
 
             if proc2.returncode == 0:
                 while os.path.exists(card[0]):
-                    umount_and_rmdir(password, card)
-                    print('trying to umount again')
-                print(Fore.GREEN + Style.BRIGHT +
-                      f'Successfully formatted {card[1]}. You can now remove it')
+                    umount_and_rmdir(0, card)
+                    # print('trying to umount again')
+                print(info + tstyle.BOLD + tcolor(
+                      f'Successfully formatted {card[1]}. You can now remove it', tstyle.teal))
                 already_done.append(card[1])
             else:
-                print(Fore.RED + Style.BRIGHT +
-                      f'Error when trying to format {card[1]}. See message above')
+                print(info + tcolor(
+                      f'Error when trying to format {card[1]}. Remove it and try again', tstyle.rojoroto))
+                while os.path.exists(card[0]):
+                    umount_and_rmdir(0, card)
+                already_done.append(card[1])
 
-    time.sleep(1)
+    time.sleep(0.5)

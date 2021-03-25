@@ -1,15 +1,25 @@
-
+import glob
+import inspect
 import os
-from pprint import pprint
+import re
+import shutil
+import subprocess
 import sys
+import time
+import warnings
+from getpass import getuser
+from pprint import pprint
+from subprocess import PIPE, Popen, check_output
+
 import pandas as pd
+import psutil
 import pygsheets
-from fieldtools.src.aesthetics import arrow
+from fieldtools.src.aesthetics import arrow, tcolor, tstyle, info
 from fieldtools.src.paths import OUT_DIR, PROJECT_DIR, safe_makedir
 from openpyxl.reader.excel import load_workbook
 from pathlib2 import Path, PosixPath
 from tqdm.auto import tqdm
-import warnings
+
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 
@@ -117,15 +127,6 @@ def safe_makedir(FILE_DIR):
                     print("Error:", e)
 
 
-def yes_or_no(question):
-    while "The answer is invalid":
-        reply = str(input(question + " (y/n): ")).lower().strip()
-        if reply[0] == "y":
-            return True
-        if reply[0] == "n":
-            return False
-
-
 def write_gpx(filename, newboxes, tocollect):
     """Writes .gpx file to disk, containing 
     a) all great tit nestboxes that haven't been recorded (in green),
@@ -202,6 +203,21 @@ def order(frame, var):
     return frame
 
 
+def get_faceplate_update():
+    gc = pygsheets.authorize(
+        service_file=str(PROJECT_DIR / "private" / "client_secret.json")
+    )
+    googlekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
+    faceplate_info = (
+        gc.open_by_key(googlekey)[0]
+        .get_as_df(has_header=True, include_tailing_empty=False)
+        .filter(['Nestbox', 'Species'])
+        .query('Species == "g" or Species == "G" or Species == "sp=g"')
+    )
+    print(arrow + "Downloading faceplating data: 100%")
+    return faceplate_info['Nestbox'].tolist()
+
+
 def get_nestbox_update():
     gc = pygsheets.authorize(
         service_file=str(PROJECT_DIR / "private" / "client_secret.json")
@@ -235,11 +251,10 @@ def get_nestbox_update():
             # worker = worker.rename(
             #     columns=worker.iloc[0]).drop(worker.index[0])
             worker = (
-                worker.rename(columns={"Num eggs": "Eggs"})
-                .rename(columns={"number": "Nestbox", "State code": "Nest"})
+                worker.rename(
+                    columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
                 .query("Nestbox == Nestbox")
-                .query('Species == "g" or Species == "G" or Species == "sp=g"')
-                .filter(["Nestbox", "Eggs"])
+                .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
                 .replace(0, "no")
             )
             worker.insert(1, "Owner", "Sam")
@@ -252,13 +267,18 @@ def get_nestbox_update():
                 worker = worker.drop([""], axis=1)
             worker = (
                 worker.query("Nestbox == Nestbox")
-                .query('Species == "g" or Species == "G" or Species == "sp=g"')
-                .filter(["Nestbox", "Owner", "Clutch Size", 'State Code'])
                 .rename(columns={"Clutch Size": "Eggs", "State Code": "Nest"})
+                .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
                 .replace("", "no")
             )
         which_greati = which_greati.append(worker)
-    return which_greati
+
+    # Now get faceplating info and join
+    greti_faceplated = get_faceplate_update()
+    combined = which_greati.query(
+        'Species == "g" or Species == "G" or Species == "sp=g" or Nestbox in @greti_faceplated').drop('Species', 1)
+
+    return combined
 
 
 def get_recorded_gretis(recorded_csv, nestbox_coords, which_greati):
@@ -268,7 +288,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greati):
         )
     )
     if len(which_greati) == 0:
-        print("There are no GRETI nestboxes yet")
+        print(info + "There are no GRETI nestboxes yet")
         return [], []
     else:
         which_greati = pd.merge(
@@ -283,12 +303,12 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greati):
         len2 = len(which_greati)
         if len1 != len2:
             print(
-                f'Removed {len1 - len2} nestboxes that were of Blue tit type')
+                info + f'Removed {len1 - len2} nestboxes that were of Blue tit type')
         which_greati.to_pickle(str(picklename))
 
     # Check which nestboxes have already been recorded
     if not Path(recorded_csv).exists():
-        print('.csv file with recorded nestboxes does not exist, creating it.')
+        print(info + '.csv file with recorded nestboxes does not exist, creating it.')
         recorded_empty = pd.DataFrame(
             columns=['Nestbox', 'AM', 'longitude', 'latitude', 'Deployed', 'Move_by'])
         recorded_empty.to_csv(recorded_csv, index=False)
@@ -351,3 +371,312 @@ def reconstruct_path(folders):
         del folders[0]
     path += os.sep.join(folders)
     return path
+
+
+# Format cards
+
+def get_mountedlist():
+    return [card[card.find("/"):] for card in check_output(
+            ["/bin/bash", "-c", "lsblk"]).decode("utf-8").split("\n") if "/" in card]
+
+
+def is_faceplate(dev):
+    try:
+        nm = Path(dev).name
+        if nm[0] == 'F' and len(nm) == 5 and nm[1:4].isnumeric():
+            return True
+        else:
+            return False
+    except:
+        return False
+
+
+def yes_or_no(question):
+    while "The answer is invalid":
+        reply = str(input(question + " [y/n]: ")).lower().strip()
+        if reply[0] == "y":
+            return True
+        elif reply[0] == "n":
+            return False
+        else:
+            print(tcolor("The answer is invalid", tstyle.rojoroto))
+
+
+def find_sdiskpart(path):
+    path = os.path.abspath(path)
+    while not os.path.ismount(path):
+        path = os.path.dirname(path)
+    p = [p for p in psutil.disk_partitions(
+        all=True) if p.mountpoint == path.__str__()]
+    l = len(p)
+    if len(p) == 1:
+        return p[0]
+    raise psutil.Error
+
+
+def get_wav_filenames(card):
+    return [os.sep.join(os.path.normpath(file).split(os.sep)[-2:])
+            for file in [os.path.join(card[0], i)
+                         for i in os.listdir(card[0])
+                         if i.endswith('.WAV')]
+            ]
+
+
+def parse_blkid(valid_directories, output):
+    valid_devices = []
+    output = [str(i).split(' ') for i in output.split(b'\n') if b'LABEL' in i]
+    for ls in output:
+        for sbls in ls:
+            if sbls.startswith('LABEL'):
+                name = re.findall(r'"(.*?)"', sbls)[0]
+                if (
+                    name[0] == 'F' and len(name) == 5 and
+                    name[1:4].isnumeric() or
+                    name in [am[0] for am in valid_directories]
+                ):
+                    devpath = str(ls[0]).replace(
+                        ':', '').replace('b\'', '')
+                    valid_devices.append([name, devpath])
+    return valid_devices
+
+
+def ensure_mount(valid_directories, password, checked_cards, already_done):
+    devnull = open(os.devnull, 'wb')
+    mounted = get_mountedlist()
+    blkid = "sudo blkid"
+    proc1 = Popen(["/bin/bash", "-c", blkid],
+                  stdin=PIPE, stdout=PIPE)
+    output, err = proc1.communicate()
+    valid_devices = parse_blkid(valid_directories, output)
+    if not valid_devices:
+        pass
+    else:
+        for dev in valid_devices:
+            if any(dev[0] in s for s in mounted):
+                continue
+            elif dev[0] in already_done:
+                continue
+            else:
+
+                # Mkdir
+                target_dir = os.path.join(os.sep, 'media', getuser(), dev[0])
+
+                if os.path.exists(target_dir):
+                    print(
+                        tcolor(f'The mount point {target_dir} already exists', tstyle.rojoroto))
+                    # Delete mount point
+                    delmount = f"sudo rmdir {target_dir}"
+                    proc5 = Popen(["/bin/bash", "-c", delmount],
+                                  stdin=PIPE, stdout=PIPE, stderr=devnull)
+                    proc5.communicate()
+
+                mkdir = f"sudo mkdir -p {target_dir}"
+                proc2 = Popen(["/bin/bash", "-c", mkdir],
+                              stdin=PIPE, stdout=PIPE, stderr=devnull)
+                out2, err2 = proc2.communicate()
+                # Mount
+                dmount = f"sudo mount {dev[1]} {target_dir}"
+                proc3 = Popen(["/bin/bash", "-c", dmount],
+                              stdin=PIPE, stdout=PIPE, stderr=devnull)
+                out3, err3 = proc3.communicate()
+                checked_cards.append(dev[0])
+    return checked_cards
+
+
+def umount_and_rmdir(password, card):
+    devnull = open(os.devnull, 'wb')
+    umount = f"sudo umount {card[0]}"
+    proc4 = Popen(["/bin/bash", "-c", umount],
+                  stdin=PIPE, stdout=PIPE, stderr=devnull)
+    proc4.communicate()
+    # Delete mount point
+    delmount = f"sudo rmdir {card[0]}"
+    proc5 = Popen(["/bin/bash", "-c", delmount],
+                  stdin=PIPE, stdout=PIPE, stderr=devnull)
+    proc5.communicate()
+    # print(f'delete mountpoint returned {proc5.returncode}')
+
+
+def any_mounted(mountdir):
+    for nm in os.listdir(mountdir):
+        if nm == 'F' and len(nm) == 5 and nm[1:4].isnumeric():
+            return True
+        elif nm.startswith('AM'):
+            return True
+        else:
+            return False
+
+
+def clean_vols():
+    devnull = open(os.devnull, 'wb')
+    print(info + 'Cleaning mounted volumes')
+    mountdir = os.path.join(os.sep, 'media', getuser()) + os.sep
+    print(any_mounted(mountdir))
+    while any_mounted(mountdir):
+        print(
+            info + tcolor('Please remove any cards from the card reader', tstyle.rojoroto), end="\r")
+        time.sleep(1)
+
+        umount = f"sudo umount {mountdir}F* {mountdir}AM*"
+        proc4 = Popen(["/bin/bash", "-c", umount],
+                      stdin=PIPE, stdout=PIPE, stderr=devnull)
+        proc4.communicate()
+
+        # Delete mount point
+        delmount = f"sudo rmdir {mountdir}F* {mountdir}AM*"
+        proc5 = Popen(["/bin/bash", "-c", delmount],
+                      stdin=PIPE, stdout=PIPE, stderr=devnull)
+        proc5.communicate()
+
+# Copy cards
+
+
+def progress_percentage(perc, width=None):
+    # By flutefreak7,
+    # https://stackoverflow.com/a/48450305
+    # This will only work for python 3.3+ due to use of
+    # os.get_terminal_size the print function etc.
+
+    FULL_BLOCK = '█'
+    # this is a gradient of incompleteness
+    INCOMPLETE_BLOCK_GRAD = ['░', '▒', '▓']
+
+    assert(isinstance(perc, float))
+    assert(0. <= perc <= 100.)
+    # if width unset use full terminal
+    if width is None:
+        width = os.get_terminal_size().columns
+    # progress bar is block_widget separator perc_widget : ####### 30%
+    max_perc_widget = '[100.00%]'  # 100% is max
+    separator = ' '
+    blocks_widget_width = width - len(separator) - len(max_perc_widget)
+    assert(blocks_widget_width >= 10)  # not very meaningful if not
+    perc_per_block = 100.0/blocks_widget_width
+    # epsilon is the sensitivity of rendering a gradient block
+    epsilon = 1e-6
+    # number of blocks that should be represented as complete
+    full_blocks = int((perc + epsilon)/perc_per_block)
+    # the rest are "incomplete"
+    empty_blocks = blocks_widget_width - full_blocks
+
+    # build blocks widget
+    blocks_widget = ([FULL_BLOCK] * full_blocks)
+    blocks_widget.extend([INCOMPLETE_BLOCK_GRAD[0]] * empty_blocks)
+    # marginal case - remainder due to how granular our blocks are
+    remainder = perc - full_blocks*perc_per_block
+    # epsilon needed for rounding errors (check would be != 0.)
+    # based on reminder modify first empty block shading
+    # depending on remainder
+    if remainder > epsilon:
+        grad_index = int((len(INCOMPLETE_BLOCK_GRAD)
+                          * remainder)/perc_per_block)
+        blocks_widget[full_blocks] = INCOMPLETE_BLOCK_GRAD[grad_index]
+
+    # build perc widget
+    str_perc = '%.2f' % perc
+    # -1 because the percentage sign is not included
+    perc_widget = '[%s%%]' % str_perc.ljust(len(max_perc_widget) - 3)
+
+    # form progressbar
+    progress_bar = '%s%s%s' % (''.join(blocks_widget), separator, perc_widget)
+    # return progressbar as string
+    return ''.join(progress_bar)
+
+
+def copy_progress(copied, total):
+    print('\r' + progress_percentage(100*copied/total, width=30), end='')
+
+
+def fetch_recorder_info(recorders_dir):
+    try:
+        recorders_info = pd.read_csv(
+            recorders_dir).query('Nestbox != "Nestbox"')
+    except:
+        raise FileNotFoundError
+    # Stop if no info on file
+    if len(recorders_info) == 0:
+        raise IndexError
+
+    recorders_info['Deployed'] = pd.to_datetime(
+        recorders_info['Deployed'], format='%Y-%m-%d')
+    recorders_info['Move_by'] = pd.to_datetime(
+        recorders_info['Move_by'], format='%Y-%m-%d')
+
+    return recorders_info
+
+
+def copyfile(src, dst, *, follow_symlinks=True):
+    """Copy data from src to dst.
+
+    If follow_symlinks is not set and src is a symbolic link, a new
+    symlink will be created instead of copying the file it points to.
+
+    """
+    # By flutefreak7,
+    # https://stackoverflow.com/a/48450305
+    if shutil._samefile(src, dst):
+        raise shutil.SameFileError(
+            "{!r} and {!r} are the same file".format(src, dst))
+
+    for fn in [src, dst]:
+        try:
+            st = os.stat(fn)
+        except OSError:
+            # File most likely does not exist
+            pass
+        else:
+            # XXX What about other special files? (sockets, devices...)
+            if shutil.stat.S_ISFIFO(st.st_mode):
+                raise shutil.SpecialFileError("`%s` is a named pipe" % fn)
+
+    if not follow_symlinks and os.path.islink(src):
+        os.symlink(os.readlink(src), dst)
+    else:
+        size = os.stat(src).st_size
+        with open(src, 'rb') as fsrc:
+            with open(dst, 'wb') as fdst:
+                copyfileobj(fsrc, fdst, callback=copy_progress, total=size)
+    return dst
+
+
+def copyfileobj(fsrc, fdst, callback, total, length=16*1024):
+    copied = 0
+    while True:
+        buf = fsrc.read(length)
+        if not buf:
+            break
+        fdst.write(buf)
+        copied += len(buf)
+        callback(copied, total=total)
+
+
+def copy_with_progress(src, dst, *, follow_symlinks=True):
+
+    if type(dst) == PosixPath:
+        dst = str(dst)
+    if os.path.isdir(dst):
+        dst = os.path.join(dst, os.path.basename(src))
+        print(f'\n{Path(dst).name}')
+
+    copyfile(src, dst, follow_symlinks=follow_symlinks)
+    shutil.copymode(src, dst)
+    return dst
+
+
+def get_nestbox_id(recorders_dir, recorders_info, card, am, filedate):
+    nestbox = recorders_info[(recorders_info['AM'] == str(am)) | (recorders_info['AM'] == int(am)) &
+                             (recorders_info['Deployed'] < filedate) &
+                             (recorders_info['Move_by'] >= filedate)]['Nestbox']
+    if len(nestbox) == 1:
+        nestbox = nestbox.iat[0]
+        return nestbox
+    elif len(nestbox) > 1:
+        print(tcolor('\n\n' + inspect.cleandoc(f"""
+                There are more than one row compatible with this
+                AM / date combination ({card[1]}, {filedate})""", tstyle.rojoroto)))
+    else:
+        print(tcolor('\n\n' + inspect.cleandoc(f"""
+                There are no rows compatible with this
+                AM / date combination ({card[1]}, {filedate}).
+                Check that you have entered the deployment information in
+                {recorders_dir}""", tstyle.rojoroto)))
