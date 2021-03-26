@@ -62,7 +62,7 @@ build_logo(__version__, logo_text, font)
 while True:
 
     # Get coordinates for all nestboxes
-    nestbox_coords = pd.read_csv(coords_csv).query('`box type` == "GT"')
+    nestbox_coords = pd.read_csv(coords_csv)  # .query('`box type` == "GT"')
     nestbox_coords["Nestbox"] = nestbox_coords["nestbox"].str.upper()
 
     # First menu
@@ -213,8 +213,8 @@ while True:
         # Fix and print new great tit data
         table_p = diff_df.drop(["longitude", "latitude", 'x', 'y', 'nestbox',
                                 'box type', 'Added'], 1).rename(columns={"section": "Section"})
-        print(' '.join(
-            tabulate(table_p, headers="keys", showindex=False).splitlines()))
+        print(tabulate(table_p, headers="keys",
+                       showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
 
         # Save to a .csv
         newpath = OUT_DIR / str("new_" + str(date.today()) + ".csv")
