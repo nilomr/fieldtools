@@ -271,6 +271,7 @@ def get_nestbox_update():
                 .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
                 .replace("", "no")
             )
+            worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
         which_greati = which_greati.append(worker)
 
     # Now get faceplating info and join
