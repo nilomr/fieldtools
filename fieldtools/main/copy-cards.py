@@ -148,6 +148,7 @@ while True:
                 # Skip card if there are no files
                 if len(files) == 0:
                     print(f'Card {card[1]} seems to be empty, skipping.')
+                    already_done.append(card[1])
                     continue
                 # Open RT file
                 path = [file for file in files if file.endswith('RT.TXT')][0]
@@ -164,12 +165,19 @@ while True:
                 else:
                     print('There is no RT file in this faceplate card, skipping')
                     continue
-                # Get first date in faceplate
-                f_datetime = pd.to_datetime(data['Date']).to_list()[-1].date()
+                # This try/except block is temporary /
+                # need to add option to ask for faceplating date to avoid this issue
+                try:
+                    # Get first date in faceplate
+                    f_datetime = pd.to_datetime(
+                        data['Date']).to_list()[-1].date()
 
-                # Out folder name
-                faceplate_out = OUT_DIR / 'faceplates' / \
-                    f'{str(f_datetime)}_{card[1]}'
+                    # Out folder name
+                    faceplate_out = OUT_DIR / 'faceplates' / \
+                        f'{str(f_datetime)}_{card[1]}'
+                except:
+                    faceplate_out = OUT_DIR / 'faceplates' / \
+                        f'ENTER_DATE_{card[1]}'
 
             else:
                 # If this is an Audiomoth card

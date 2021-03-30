@@ -2,30 +2,25 @@
 
 # Dependencies --------------------------
 
-import os
 import subprocess
+import time
 from datetime import date, datetime, timedelta
 from pprint import pprint
 from textwrap import dedent
-import time
 
-import numpy as np
 import pandas as pd
-from cfonts import render, say
-from cfonts.consts import FONTFACES
-from colorama import Back, Fore, Style, init
-from fieldtools.src.aesthetics import (arrow, build_logo, info, menu_aes, print_dict, qmark,
-                                       tcolor, tstyle, asterbar)
-from fieldtools.src.funs import get_faceplate_update, get_nestbox_update, get_recorded_gretis, order, reconstruct_path, split_path, write_gpx, yes_or_no
+import pygsheets
+from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
+                                       menu_aes, print_dict, qmark, tcolor,
+                                       tstyle)
+from fieldtools.src.funs import (get_nestbox_update, get_recorded_gretis,
+                                 order, reconstruct_path, split_path, workers,
+                                 write_gpx, yes_or_no)
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
                                   safe_makedir)
 from fieldtools.version import __version__
-from openpyxl import load_workbook
-from pathlib2 import Path, PosixPath
 from PyInquirer import prompt
 from tabulate import tabulate
-
-init(autoreset=True)
 
 # Options
 
@@ -59,6 +54,40 @@ logo_text = 'Fieldwork helper_'
 font = 'tiny'
 build_logo(__version__, logo_text, font)
 
+
+def get_single_gsheet(gc, name, key):
+    if name == "Sam":
+        worker = gc.open_by_key(roundkey)[0].get_as_df(
+            has_header=True, include_tailing_empty=False).loc[:, :'fledge']
+        if "" in worker.columns:
+            worker = worker.drop([""], axis=1)
+        worker = worker.rename(columns=worker.iloc[0]).drop(worker.index[0])
+        worker = (
+            worker.rename(
+                columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
+            .query("Nestbox == Nestbox")
+            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
+            .replace(0, "no")
+            .replace('', "no")
+        )
+        worker.insert(1, "Owner", "Sam")
+    else:
+        worker = gc.open_by_key(roundkey)[0].get_as_df(
+            has_header=False, include_tailing_empty=False)
+        worker = worker.rename(
+            columns=worker.iloc[0]).drop(worker.index[0])
+        if "" in worker.columns:
+            worker = worker.drop([""], axis=1)
+        worker = (
+            worker.query("Nestbox == Nestbox")
+            .rename(columns={"Clutch Size": "Eggs", "State Code": "Nest"})
+            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
+            .replace("", "no")
+        )
+        worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
+    return worker.query("Nestbox != 'no'")
+
+
 while True:
 
     # Get coordinates for all nestboxes
@@ -73,8 +102,9 @@ while True:
             'message': ' Options',
             'name': 'option',
             'choices': [
-                {'name': 'Enter deployment data'},
                 {'name': 'Get a progress report'},
+                {'name': 'Enter deployment data'},
+                {'name': 'Prepare faceplating plan'},
                 {'name': 'Exit the app'},
             ],
             'validate': lambda answer: 'You must choose one option.'
@@ -195,7 +225,7 @@ while True:
         # Get updated list of nestboxes from google sheets
         which_greati = get_nestbox_update().replace(
             'nan', 0).fillna(0).replace('n/a', 0)
-
+        # TODO: get number of blutis and gretis separatedly
         already_recorded, diff_df = get_recorded_gretis(
             recorded_csv, nestbox_coords, which_greati)
 
@@ -319,5 +349,54 @@ while True:
                 elif answer == "None":
                     break
             continue
+
+    elif answer == 'Prepare faceplating plan':
+
+        # Area menu
+        print('')
+        questions = [
+            {
+                'type': 'list',
+                'message': 'Which nest round do you want?',
+                'name': 'option',
+                'choices': [
+                    {'name': 'Bean'},
+                    {'name': 'Broad Oak'},
+                    {'name': 'Common Piece'},
+                    {'name': 'Extra'},
+                    {'name': 'Great Wood'},
+                    {'name': 'Marley'},
+                    {'name': 'Marley Plantation'},
+                    {'name': 'Singing Way'},
+                    {'name': 'None: Go back to the main menu'},
+                ],
+                'validate': lambda answer: 'You must choose one option.'
+                if len(answer) == 0 else True
+            }
+        ]
+
+        answer = prompt(questions, style=menu_aes)['option']
+        print('')
+
+        if answer == 'Go back to the main menu':
+            continue
+
+        gc = pygsheets.authorize(
+            service_file=str(PROJECT_DIR / "private" /
+                             "client_secret.json")
+        )
+        name = workers.rounds_dict[answer]
+        roundkey = workers.gdict[name]
+
+        round_df = get_single_gsheet(gc, name, roundkey)
+
+        facekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
+        faceplate_info = (
+            gc.open_by_key(facekey)[0]
+            .get_as_df(has_header=True, include_tailing_empty=False))
+
+        #     .filter(['Nestbox', 'Species'])
+        #     .query('Species == "g" or Species == "G" or Species == "sp=g"')
+        # )
 
 # print(Fore.BLACK + Back.WHITE + which_greati.groupby(['Owner']).size().to_markdown())
