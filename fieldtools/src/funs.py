@@ -218,12 +218,8 @@ def get_faceplate_update():
     return faceplate_info['Nestbox'].tolist()
 
 
-def get_nestbox_update():
-    gc = pygsheets.authorize(
-        service_file=str(PROJECT_DIR / "private" / "client_secret.json")
-    )
-    # Download and append personal sheets
-    workerdict = {  # ! Change every year
+class workers:
+    gdict = {  # ! Change every year
         "Anett": "1e-So1BfXqhDDSqYSVVDllig_saDUk2d0zwRpwsVi0iI",
         "Joe": "1lOjeo7EHy1qe8rqj-T6QsiTxISLebH-GolJh1DrIWL8",
         "Nilo": "1qII34MKHEq3Sl0a86t2EObqcXii3Sw6x3AlDRaO-caA",
@@ -233,7 +229,25 @@ def get_nestbox_update():
         "Carys": "1toHQ4R2btmQdMzVFgtlC6pE67unmHY3i0qp-BOfkjUc",
         "Sam": "1Y8iBGVTm1qw-eIqW2wSn6eG3FK7tVyvN2x2nEiPb-3w",
     }
-    which_greati = pd.DataFrame(columns=["Nestbox", "Owner"])
+    rounds_dict = {
+        'Bean': 'Joe',
+        'Broad Oak': 'Julia',
+        'Common Piece': 'Kristina',
+        'Extra': 'Nilo',
+        'Great Wood': 'Sam',
+        'Marley': 'Keith',
+        'Marley Plantation': 'Anett',
+        'Singing Way': 'Carys',
+    }
+
+
+def get_nestbox_update():
+    gc = pygsheets.authorize(
+        service_file=str(PROJECT_DIR / "private" / "client_secret.json")
+    )
+    # Download and append personal sheets
+    workerdict = workers.gdict
+    which_greti = pd.DataFrame(columns=["Nestbox", "Owner"])
 
     for worker, googlekey in tqdm(
         workerdict.items(),
@@ -256,6 +270,7 @@ def get_nestbox_update():
                 .query("Nestbox == Nestbox")
                 .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
                 .replace(0, "no")
+                .replace('', "no")
             )
             worker.insert(1, "Owner", "Sam")
         else:
@@ -272,40 +287,41 @@ def get_nestbox_update():
                 .replace("", "no")
             )
             worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
-        which_greati = which_greati.append(worker)
+        which_greti = which_greti.append(worker)
 
     # Now get faceplating info and join
     greti_faceplated = get_faceplate_update()
-    combined = which_greati.query(
+    combined = which_greti.query(
         'Species == "g" or Species == "G" or Species == "sp=g" or Nestbox in @greti_faceplated').drop('Species', 1)
 
     return combined
 
 
-def get_recorded_gretis(recorded_csv, nestbox_coords, which_greati):
+def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
     picklename = OUT_DIR / (
         str(
             f"allrounds_{str(pd.Timestamp('today', tz='UTC').strftime('%Y%m%d'))}.pkl"
         )
     )
-    if len(which_greati) == 0:
+    if len(which_greti) == 0:
         print(info + "There are no GRETI nestboxes yet")
         return [], []
     else:
-        which_greati = pd.merge(
-            which_greati, nestbox_coords, on=["Nestbox"])
-        which_greati["Added"] = str(
+        which_greti = pd.merge(
+            which_greti, nestbox_coords, on=["Nestbox"])
+        which_greti["Added"] = str(
             pd.Timestamp("today", tz="UTC").strftime("%Y-%m-%d")
         )
-        len1 = len(which_greati)
+        len1 = len(which_greti)
         # Remove Blue tit nestboxes from list
-        which_greati = which_greati[which_greati['Nestbox'].isin(
-            nestbox_coords["Nestbox"].to_list())]
-        len2 = len(which_greati)
+        greti_boxes = nestbox_coords.query(
+            '`box type` == "GT"')['Nestbox'].to_list()
+        which_greti = which_greti[which_greti['Nestbox'].isin(greti_boxes)]
+        len2 = len(which_greti)
         if len1 != len2:
             print(
                 info + f'Removed {len1 - len2} nestboxes that were of Blue tit type')
-        which_greati.to_pickle(str(picklename))
+        which_greti.to_pickle(str(picklename))
 
     # Check which nestboxes have already been recorded
     if not Path(recorded_csv).exists():
@@ -320,7 +336,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greati):
             .query('Nestbox != "Nestbox"')
         )
         diff_df = (
-            which_greati.merge(
+            which_greti.merge(
                 already_recorded, on=["Nestbox"], indicator=True, how="outer"
             )
             .query('_merge != "both"')
@@ -336,7 +352,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greati):
             ['Eggs', 'Nest'], ascending=[False, False])
     except:
         already_recorded = []
-        diff_df = which_greati
+        diff_df = which_greti
 
     return already_recorded, diff_df
 
