@@ -8,7 +8,7 @@ from pathlib2 import Path, PosixPath
 from colorama import Back, Fore, Style, init
 import psutil
 import pandas as pd
-from datetime import datetime
+from datetime import date, datetime
 import time
 from subprocess import PIPE, Popen, check_output
 import sys
@@ -28,11 +28,11 @@ init(autoreset=True)
 # Settings
 
 open_origin_window = False  # Whether to open a nautilus window
-verbose = False  # Whether to print errors for debugging #TODO
-check_for_drive = False  # Whether to check if the destination drive is on
+verbose = False  # Whether to print errors for debugging
+check_for_drive = True  # Whether to check if the destination drive is on
 
-# Where to copy the files to
-DESTINATION_DIR = PROJECT_DIR
+# Where to copy the files to (AMs)
+DESTINATION_DIR = DATA_DIR / 'raw' / str(date.today().year)
 
 # Names to listen for (here AM codes)
 AM_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")
@@ -97,7 +97,7 @@ while True:
     # Mount any cards not already mounted
     # (sometimes automount does not work)
     checked_cards = ensure_mount(
-        valid_directories, 0, checked_cards, already_done)
+        valid_directories, 0, checked_cards, already_done, verbose)
 
     # This is older code and can be made redundant at some point;
     # just take the right devices from the valid_devices list!
@@ -121,8 +121,7 @@ while True:
             except FileNotFoundError as e:
                 print(info + tcolor(inspect.cleandoc("""
                 You need to have a .csv file with information
-                about recorder deployment before you can use this program"""),
-                                    tstyle.rojoroto))
+                about recorder deployment before you can use this program"""), tstyle.rojoroto))
                 sys.exit()
 
             except IndexError as e:
