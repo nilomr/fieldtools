@@ -1,3 +1,4 @@
+import datetime
 import glob
 import inspect
 import os
@@ -297,6 +298,43 @@ def get_nestbox_update():
     return combined
 
 
+def get_single_gsheet(name, key):
+    gc = pygsheets.authorize(
+        service_file=str(PROJECT_DIR / "private" /
+                         "client_secret.json")
+    )
+    if name == "Sam":
+        worker = gc.open_by_key(key)[0].get_as_df(
+            has_header=True, include_tailing_empty=False).loc[:, :'fledge']
+        if "" in worker.columns:
+            worker = worker.drop([""], axis=1)
+        worker = worker.rename(columns=worker.iloc[0]).drop(worker.index[0])
+        worker = (
+            worker.rename(
+                columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
+            .query("Nestbox == Nestbox")
+            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
+            .replace(0, "no")
+            .replace('', "no")
+        )
+        worker.insert(1, "Owner", "Sam")
+    else:
+        worker = gc.open_by_key(key)[0].get_as_df(
+            has_header=False, include_tailing_empty=False)
+        worker = worker.rename(
+            columns=worker.iloc[0]).drop(worker.index[0])
+        if "" in worker.columns:
+            worker = worker.drop([""], axis=1)
+        worker = (
+            worker.query("Nestbox == Nestbox")
+            .rename(columns={"Clutch Size": "Eggs", "State Code": "Nest"})
+            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
+            .replace("", "no")
+        )
+        worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
+    return worker.query("Nestbox != 'no'")
+
+
 def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
     picklename = OUT_DIR / (
         str(
@@ -320,7 +358,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
         len2 = len(which_greti)
         if len1 != len2:
             print(
-                info + f'Removed {len1 - len2} nestboxes that were of Blue tit type')
+                info + f'Removed {len1 - len2} nestboxes that were of blue tit type')
         which_greti.to_pickle(str(picklename))
 
     # Check which nestboxes have already been recorded
@@ -457,7 +495,7 @@ def parse_blkid(valid_directories, output):
     return valid_devices
 
 
-def ensure_mount(valid_directories, password, checked_cards, already_done):
+def ensure_mount(valid_directories, password, checked_cards, already_done, verbose):
     devnull = open(os.devnull, 'wb')
     mounted = get_mountedlist()
     blkid = "sudo blkid"
@@ -479,8 +517,9 @@ def ensure_mount(valid_directories, password, checked_cards, already_done):
                 target_dir = os.path.join(os.sep, 'media', getuser(), dev[0])
 
                 if os.path.exists(target_dir):
-                    print(
-                        tcolor(f'The mount point {target_dir} already exists', tstyle.rojoroto))
+                    if verbose:
+                        print(
+                            tcolor(f'The mount point {target_dir} already exists', tstyle.rojoroto))
                     # Delete mount point
                     delmount = f"sudo rmdir {target_dir}"
                     proc5 = Popen(["/bin/bash", "-c", delmount],
@@ -564,7 +603,7 @@ def progress_percentage(perc, width=None):
     if width is None:
         width = os.get_terminal_size().columns
     # progress bar is block_widget separator perc_widget : ####### 30%
-    max_perc_widget = '[100.00%]'  # 100% is max
+    max_perc_widget = '100.00%'  # 100% is max
     separator = ' '
     blocks_widget_width = width - len(separator) - len(max_perc_widget)
     assert(blocks_widget_width >= 10)  # not very meaningful if not
@@ -592,7 +631,7 @@ def progress_percentage(perc, width=None):
     # build perc widget
     str_perc = '%.2f' % perc
     # -1 because the percentage sign is not included
-    perc_widget = '[%s%%]' % str_perc.ljust(len(max_perc_widget) - 3)
+    perc_widget = '%s%%' % str_perc.ljust(len(max_perc_widget) - 1)
 
     # form progressbar
     progress_bar = '%s%s%s' % (''.join(blocks_widget), separator, perc_widget)
@@ -681,19 +720,26 @@ def copy_with_progress(src, dst, *, follow_symlinks=True):
 
 
 def get_nestbox_id(recorders_dir, recorders_info, card, am, filedate):
-    nestbox = recorders_info[(recorders_info['AM'] == str(am)) | (recorders_info['AM'] == int(am)) &
-                             (recorders_info['Deployed'] < filedate) &
-                             (recorders_info['Move_by'] >= filedate)]['Nestbox']
+    try:
+        nestbox = recorders_info[(recorders_info['AM'] == str(am)) | (
+            recorders_info['AM'] == int(am))]
+        nestbox = nestbox[(nestbox['Deployed'] + datetime.timedelta(hours=10) < filedate) &
+                          (nestbox['Move_by'] + datetime.timedelta(hours=10) >= filedate)]['Nestbox']
+    except:
+        print(tcolor('\n\n' + inspect.cleandoc(f"""
+                Unknown error when trying to get the recorder information 
+                for file with datetime {filedate} from {card[1]}"""), tstyle.rojoroto))
+
     if len(nestbox) == 1:
         nestbox = nestbox.iat[0]
         return nestbox
     elif len(nestbox) > 1:
         print(tcolor('\n\n' + inspect.cleandoc(f"""
                 There are more than one row compatible with this
-                AM / date combination ({card[1]}, {filedate})""", tstyle.rojoroto)))
+                AM / date combination ({card[1]}, {filedate})"""), tstyle.rojoroto))
     else:
         print(tcolor('\n\n' + inspect.cleandoc(f"""
                 There are no rows compatible with this
                 AM / date combination ({card[1]}, {filedate}).
                 Check that you have entered the deployment information in
-                {recorders_dir}""", tstyle.rojoroto)))
+                {recorders_dir}"""), tstyle.rojoroto))
