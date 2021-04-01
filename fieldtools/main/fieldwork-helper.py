@@ -9,11 +9,12 @@ from pprint import pprint
 from textwrap import dedent
 
 import pandas as pd
+from pathlib2 import Path
 import pygsheets
 from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
                                        menu_aes, print_dict, qmark, tcolor,
                                        tstyle)
-from fieldtools.src.funs import (get_nestbox_update, get_recorded_gretis,
+from fieldtools.src.funs import (get_nestbox_update, get_recorded_gretis, get_single_gsheet,
                                  order, reconstruct_path, split_path, workers,
                                  write_gpx, yes_or_no)
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
@@ -53,39 +54,6 @@ for path in [OUT_DIR, FIELD_DIR]:
 logo_text = 'Fieldwork helper_'
 font = 'tiny'
 build_logo(__version__, logo_text, font)
-
-
-def get_single_gsheet(gc, name, key):
-    if name == "Sam":
-        worker = gc.open_by_key(roundkey)[0].get_as_df(
-            has_header=True, include_tailing_empty=False).loc[:, :'fledge']
-        if "" in worker.columns:
-            worker = worker.drop([""], axis=1)
-        worker = worker.rename(columns=worker.iloc[0]).drop(worker.index[0])
-        worker = (
-            worker.rename(
-                columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
-            .query("Nestbox == Nestbox")
-            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-            .replace(0, "no")
-            .replace('', "no")
-        )
-        worker.insert(1, "Owner", "Sam")
-    else:
-        worker = gc.open_by_key(roundkey)[0].get_as_df(
-            has_header=False, include_tailing_empty=False)
-        worker = worker.rename(
-            columns=worker.iloc[0]).drop(worker.index[0])
-        if "" in worker.columns:
-            worker = worker.drop([""], axis=1)
-        worker = (
-            worker.query("Nestbox == Nestbox")
-            .rename(columns={"Clutch Size": "Eggs", "State Code": "Nest"})
-            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-            .replace("", "no")
-        )
-        worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
-    return worker.query("Nestbox != 'no'")
 
 
 while True:
@@ -357,7 +325,7 @@ while True:
         questions = [
             {
                 'type': 'list',
-                'message': 'Which nest round do you want?',
+                'message': 'Select a nest round',
                 'name': 'option',
                 'choices': [
                     {'name': 'Bean'},
@@ -378,22 +346,55 @@ while True:
         answer = prompt(questions, style=menu_aes)['option']
         print('')
 
-        if answer == 'Go back to the main menu':
+        if answer == 'None: Go back to the main menu':
             continue
 
-        gc = pygsheets.authorize(
-            service_file=str(PROJECT_DIR / "private" /
-                             "client_secret.json")
-        )
+        # Get the data frm the selected round
         name = workers.rounds_dict[answer]
         roundkey = workers.gdict[name]
+        round_df = get_single_gsheet(name, roundkey)
 
-        round_df = get_single_gsheet(gc, name, roundkey)
+        # Get the data from faceplating
+        def get_full_faceplate_info():
+            gc = pygsheets.authorize(
+                service_file=str(PROJECT_DIR / "private" /
+                                 "client_secret.json")
+            )
+            facekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
+            faceplate_info = (
+                gc.open_by_key(facekey)[0]
+                .get_as_df(has_header=True, include_tailing_empty=False))
+            return faceplate_info
+        faceplate_df = get_full_faceplate_info().query('Nestbox == Nestbox')
+        idd = faceplate_df.query('Species == "g" or Species == "b"')[
+            'Nestbox'].tolist()
+        # Get blue tit only boxes
+        bluti_boxes = nestbox_coords.query('`box type` == "BT"')[
+            'Nestbox'].tolist()
 
-        facekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
-        faceplate_info = (
-            gc.open_by_key(facekey)[0]
-            .get_as_df(has_header=True, include_tailing_empty=False))
+        # Get already recorded boxes
+        if not Path(recorded_csv).exists():
+            print(info + '.csv file with recorded nestboxes does not exist, creating it.')
+            recorded_empty = pd.DataFrame(
+                columns=['Nestbox', 'AM', 'longitude', 'latitude', 'Deployed', 'Move_by'])
+            recorded_empty.to_csv(recorded_csv, index=False)
+        try:
+            already_recorded = (
+                pd.read_csv(recorded_csv)
+                .filter(["Nestbox"])
+                .query('Nestbox != "Nestbox"')
+                ['Nestbox'].tolist()
+            )
+        except:
+            already_recorded = []
+
+        result = round_df.query(
+            'Nestbox not in @idd and Nestbox not in @bluti_boxes and Nestbox not in @already_recorded and Nest >= 2')
+
+        print(tabulate(result, headers="keys",
+                       showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
+        print(' ' + str(len(result)))
+        continue
 
         #     .filter(['Nestbox', 'Species'])
         #     .query('Species == "g" or Species == "G" or Species == "sp=g"')
