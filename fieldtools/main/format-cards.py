@@ -20,6 +20,7 @@ from pathlib2 import Path
 # Settings
 skip_empty = False  # Wether to skip already empty cards
 safe_copy = False  # Wether to ensure that files exist before allowing formatting
+verbose = False
 
 # Names to listen for (here AM codes)
 AM_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")
@@ -77,7 +78,7 @@ while True:
     # Mount any cards not already mounted
     # (sometimes automount does not work)
     checked_cards = ensure_mount(
-        valid_directories, 0, checked_cards, already_done)
+        valid_directories, 0, checked_cards, already_done, verbose)
 
     # Now get all valid mounted cards
     mounted = get_mountedlist()
