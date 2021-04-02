@@ -29,7 +29,7 @@ init(autoreset=True)
 
 open_origin_window = False  # Whether to open a nautilus window
 verbose = False  # Whether to print errors for debugging
-check_for_drive = True  # Whether to check if the destination drive is on
+check_for_drive = False  # Whether to check if the destination drive is on
 
 # Where to copy the files to (AMs)
 DESTINATION_DIR = DATA_DIR / 'raw' / str(date.today().year)

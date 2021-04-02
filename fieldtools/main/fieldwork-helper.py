@@ -2,6 +2,7 @@
 
 # Dependencies --------------------------
 
+import numpy as np
 import subprocess
 import time
 from datetime import date, datetime, timedelta
@@ -9,17 +10,17 @@ from pprint import pprint
 from textwrap import dedent
 
 import pandas as pd
-from pathlib2 import Path
 import pygsheets
 from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
                                        menu_aes, print_dict, qmark, tcolor,
                                        tstyle)
-from fieldtools.src.funs import (get_nestbox_update, get_recorded_gretis, get_single_gsheet,
-                                 order, reconstruct_path, split_path, workers,
-                                 write_gpx, yes_or_no)
+from fieldtools.src.funs import (get_nestbox_update, get_recorded_gretis,
+                                 get_single_gsheet, order, reconstruct_path,
+                                 split_path, workers, write_gpx, yes_or_no)
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
                                   safe_makedir)
 from fieldtools.version import __version__
+from pathlib2 import Path
 from PyInquirer import prompt
 from tabulate import tabulate
 
@@ -388,16 +389,23 @@ while True:
         except:
             already_recorded = []
 
-        result = round_df.query(
-            'Nestbox not in @idd and Nestbox not in @bluti_boxes and Nestbox not in @already_recorded and Nest >= 2')
+    # Avoid different source formatting issues
+    round_df = round_df.astype(str)
+    round_df['Nest'] = round_df['Nest'].replace('no', np.nan)
+    # Query for relevant data
+    result = round_df.query(
+        'Nestbox not in @idd and Nestbox not in @bluti_boxes and Nestbox not in @already_recorded and Nest >= "2"')
+    # Sort for ease of reading
+    result = result.sort_values(
+        ['Eggs', 'Nest'], ascending=[False, False])
 
-        print(tabulate(result, headers="keys",
-                       showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
-        print(' ' + str(len(result)))
-        continue
+    print(tabulate(result, headers="keys",
+                   showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
+    print('\n  N: ' + str(len(result)))
+    continue
 
-        #     .filter(['Nestbox', 'Species'])
-        #     .query('Species == "g" or Species == "G" or Species == "sp=g"')
-        # )
+    #     .filter(['Nestbox', 'Species'])
+    #     .query('Species == "g" or Species == "G" or Species == "sp=g"')
+    # )
 
 # print(Fore.BLACK + Back.WHITE + which_greati.groupby(['Owner']).size().to_markdown())
