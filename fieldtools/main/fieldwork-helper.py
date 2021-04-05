@@ -294,7 +294,7 @@ while True:
 
                 if answer == f"Today's ({today})":
                     move_today = (
-                        pd.read_csv(recorded_csv)
+                        pd.read_csv(recorded_csv_append)
                         .query('Nestbox != "Nestbox"')
                         .query("Move_by == @today")
                     )
@@ -308,7 +308,7 @@ while True:
 
                 elif answer == f"Tomorrow's ({tomorrow})":
                     move_tomorrow = (
-                        pd.read_csv(recorded_csv)
+                        pd.read_csv(recorded_csv_append)
                         .query('Nestbox != "Nestbox"')
                         .query("Move_by == @tomorrow")
                     )
