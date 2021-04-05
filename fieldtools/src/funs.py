@@ -386,6 +386,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
                 columns={"longitude_x": "longitude",
                          "latitude_x": "latitude"}
             )
+        diff_df['Nest'] = diff_df['Nest'].replace('no', 0)
         diff_df = diff_df.sort_values(
             ['Eggs', 'Nest'], ascending=[False, False])
     except:
@@ -743,3 +744,15 @@ def get_nestbox_id(recorders_dir, recorders_info, card, am, filedate):
                 AM / date combination ({card[1]}, {filedate}).
                 Check that you have entered the deployment information in
                 {recorders_dir}"""), tstyle.rojoroto))
+
+
+def get_full_faceplate_info():
+    gc = pygsheets.authorize(
+        service_file=str(PROJECT_DIR / "private" /
+                         "client_secret.json")
+    )
+    facekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
+    faceplate_info = (
+        gc.open_by_key(facekey)[0]
+        .get_as_df(has_header=True, include_tailing_empty=False))
+    return faceplate_info
