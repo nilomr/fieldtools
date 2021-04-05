@@ -150,7 +150,15 @@ while True:
                     already_done.append(card[1])
                     continue
                 # Open RT file
-                path = [file for file in files if file.endswith('RT.TXT')][0]
+                try:
+                    path = [
+                        file for file in files if file.endswith('RT.TXT')][0]
+                except:  # TODO: handle this!
+                    print(
+                        f'There is no RT file in this faceplate card ({card[1]}), skipping')
+                    already_done.append(card[1])
+                    continue
+
                 if os.path.isfile(path):
                     tmp = pd.read_csv(path, sep='\s*\t\s*',
                                       header=0, engine='python')
@@ -206,6 +214,9 @@ while True:
                         continue
                     # Copy file
                     target = DESTINATION_DIR / nestbox
+                    if target.exists():
+                        target = DESTINATION_DIR / f'{nestbox}_1'
+
                 else:
                     target = faceplate_out
 
