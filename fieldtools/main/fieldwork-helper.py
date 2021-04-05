@@ -10,11 +10,10 @@ from pprint import pprint
 from textwrap import dedent
 
 import pandas as pd
-import pygsheets
 from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
                                        menu_aes, print_dict, qmark, tcolor,
                                        tstyle)
-from fieldtools.src.funs import (get_nestbox_update, get_recorded_gretis,
+from fieldtools.src.funs import (get_full_faceplate_info, get_nestbox_update, get_recorded_gretis,
                                  get_single_gsheet, order, reconstruct_path,
                                  split_path, workers, write_gpx, yes_or_no)
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
@@ -38,6 +37,10 @@ GPX_DIR = OUT_DIR / "gpx-files"
 RPLOTS = EGO_DIR / "plot-new-boxes.R"
 coords_csv = PROJECT_DIR / "resources" / \
     'nestboxes' / "nestbox_coords_transformed.csv"
+
+# only append data here. Manual creation for now
+recorded_csv_append = OUT_DIR / "already-recorded-append.csv"
+# editable: remove if you want to record again.
 recorded_csv = OUT_DIR / "already-recorded.csv"
 
 
@@ -181,6 +184,9 @@ while True:
         new_boxes = order(new_boxes, ["Nestbox", "AM"])
 
         with open(recorded_csv, 'a') as f:
+            new_boxes.to_csv(f, header=True, index=False)
+
+        with open(recorded_csv_append, 'a') as f:
             new_boxes.to_csv(f, header=True, index=False)
 
         print(tstyle.BOLD +
@@ -355,20 +361,18 @@ while True:
         roundkey = workers.gdict[name]
         round_df = get_single_gsheet(name, roundkey)
 
-        # Get the data from faceplating
-        def get_full_faceplate_info():
-            gc = pygsheets.authorize(
-                service_file=str(PROJECT_DIR / "private" /
-                                 "client_secret.json")
-            )
-            facekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
-            faceplate_info = (
-                gc.open_by_key(facekey)[0]
-                .get_as_df(has_header=True, include_tailing_empty=False))
-            return faceplate_info
+        # Get the data from faceplating. Get birds with known ID or detected but without PIT tag
         faceplate_df = get_full_faceplate_info().query('Nestbox == Nestbox')
-        idd = faceplate_df.query('Species == "g" or Species == "b"')[
+        mask = faceplate_df.query(
+            'Species != "g" and Species != "b"')["Comments"].str.lower().str.contains('unringed')
+        unringed = faceplate_df.query(
+            'Species != "g" and Species != "b"').query("@mask")[
             'Nestbox'].tolist()
+
+        idd = faceplate_df.query('Species == "g" or Species == "b"')[
+            'Nestbox'].tolist() + unringed
+
+# TODO: remove those with unringed birds from list######################
         # Get blue tit only boxes
         bluti_boxes = nestbox_coords.query('`box type` == "BT"')[
             'Nestbox'].tolist()
@@ -392,12 +396,13 @@ while True:
     # Avoid different source formatting issues
     round_df = round_df.astype(str)
     round_df['Nest'] = round_df['Nest'].replace('no', np.nan)
+
     # Query for relevant data
     result = round_df.query(
         'Nestbox not in @idd and Nestbox not in @bluti_boxes and Nestbox not in @already_recorded and Nest >= "2"')
     # Sort for ease of reading
     result = result.sort_values(
-        ['Eggs', 'Nest'], ascending=[False, False])
+        ['Eggs', 'Nest', 'Species'], ascending=[False, False, True])
 
     print(tabulate(result, headers="keys",
                    showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
