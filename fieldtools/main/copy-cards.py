@@ -8,7 +8,7 @@ from pathlib2 import Path, PosixPath
 from colorama import Back, Fore, Style, init
 import psutil
 import pandas as pd
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import time
 from subprocess import PIPE, Popen, check_output
 import sys
@@ -44,7 +44,7 @@ valid_directories = [(name, folder_name)
                      for name, folder_name in zip(AM_list, folder_names)]
 
 # Path to info about recorders
-recorders_dir = OUT_DIR / 'already-recorded.csv'
+recorders_dir = OUT_DIR / 'already-recorded-append.csv'
 
 # Colours
 red = Fore.RED + Style.BRIGHT
@@ -214,9 +214,13 @@ while True:
                         continue
                     # Copy file
                     target = DESTINATION_DIR / nestbox
-                    if target.exists():
-                        target = DESTINATION_DIR / f'{nestbox}_1'
-
+                    it = 1
+                    while target.exists():  # Ugly but works - do not create new folder if existing has been recently modified
+                        targed_dat = datetime.fromtimestamp(
+                            os.stat(str(target)).st_mtime)
+                        if targed_dat < (filedate - timedelta(hours=1)):
+                            target = DESTINATION_DIR / f'{nestbox}_{it}'
+                            it += 1
                 else:
                     target = faceplate_out
 

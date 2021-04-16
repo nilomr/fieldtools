@@ -63,7 +63,8 @@ build_logo(__version__, logo_text, font)
 while True:
 
     # Get coordinates for all nestboxes
-    nestbox_coords = pd.read_csv(coords_csv)  # .query('`box type` == "GT"')
+    nestbox_coords = pd.read_csv(coords_csv).drop(
+        ["comments"], 1)  # .query('`box type` == "GT"')
     nestbox_coords["Nestbox"] = nestbox_coords["nestbox"].str.upper()
 
     # First menu
