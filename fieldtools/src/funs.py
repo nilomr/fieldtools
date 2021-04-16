@@ -219,6 +219,20 @@ def get_faceplate_update():
     return faceplate_info['Nestbox'].tolist()
 
 
+def get_comments_update():
+    gc = pygsheets.authorize(
+        service_file=str(PROJECT_DIR / "private" / "client_secret.json")
+    )
+    googlekey = '1eJ1yI1vNkoggq72M3j-x9UtcFhew4-xujl64sJJb7tg'  # The faceplating sheet
+    comments_df = (
+        gc.open_by_key(googlekey)[0]
+        .get_as_df(has_header=True, include_tailing_empty=False)
+        .query('Again == "YES" or Again == "TRUE"')
+        .filter(['Nestbox', 'Comments'])
+    )
+    return comments_df
+
+
 class workers:
     gdict = {  # ! Change every year
         "Anett": "1e-So1BfXqhDDSqYSVVDllig_saDUk2d0zwRpwsVi0iI",
@@ -283,7 +297,7 @@ def get_nestbox_update():
                 worker = worker.drop([""], axis=1)
             worker = (
                 worker.query("Nestbox == Nestbox")
-                .rename(columns={"Clutch Size": "Eggs", "State Code": "Nest"})
+                .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
                 .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
                 .replace("", "no")
             )
@@ -308,7 +322,7 @@ def get_single_gsheet(name, key):
             has_header=True, include_tailing_empty=False).loc[:, :'fledge']
         if "" in worker.columns:
             worker = worker.drop([""], axis=1)
-        worker = worker.rename(columns=worker.iloc[0]).drop(worker.index[0])
+        # worker = worker.rename(columns=worker.iloc[0]).drop(worker.index[0])
         worker = (
             worker.rename(
                 columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
@@ -327,7 +341,7 @@ def get_single_gsheet(name, key):
             worker = worker.drop([""], axis=1)
         worker = (
             worker.query("Nestbox == Nestbox")
-            .rename(columns={"Clutch Size": "Eggs", "State Code": "Nest"})
+            .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
             .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
             .replace("", "no")
         )
@@ -354,12 +368,16 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
         # Remove Blue tit nestboxes from list
         greti_boxes = nestbox_coords.query(
             '`box type` == "GT"')['Nestbox'].to_list()
-        which_greti = which_greti[which_greti['Nestbox'].isin(greti_boxes)]
-        len2 = len(which_greti)
+        bluti_boxes = nestbox_coords.query(
+            '`box type` == "BT"')['Nestbox'].to_list()
+        which_greti_1 = which_greti[which_greti['Nestbox'].isin(greti_boxes)]
+        which_wrong = which_greti[which_greti['Nestbox'].isin(bluti_boxes)]
+        len2 = len(which_greti_1)
         if len1 != len2:
             print(
                 info + f'Removed {len1 - len2} nestboxes that were of blue tit type')
-        which_greti.to_pickle(str(picklename))
+            # print(which_wrong)
+        which_greti_1.to_pickle(str(picklename))
 
     # Check which nestboxes have already been recorded
     if not Path(recorded_csv).exists():
@@ -374,7 +392,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
             .query('Nestbox != "Nestbox"')
         )
         diff_df = (
-            which_greti.merge(
+            which_greti_1.merge(
                 already_recorded, on=["Nestbox"], indicator=True, how="outer"
             )
             .query('_merge != "both"')
@@ -388,10 +406,18 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
             )
         diff_df['Nest'] = diff_df['Nest'].replace('no', 0)
         diff_df = diff_df.sort_values(
-            ['Eggs', 'Nest'], ascending=[False, False])
+            ['Eggs', 'Nest'], ascending=[True, False])
+
     except:
         already_recorded = []
-        diff_df = which_greti
+        diff_df = which_greti_1
+    try:
+        comments = get_comments_update()
+        diff_df = pd.merge(
+            diff_df, comments, how="left", on=["Nestbox"])
+        diff_df.fillna('', inplace=True)
+    except:
+        print('Error when downloading comments, skipping comments.')
 
     return already_recorded, diff_df
 
@@ -723,7 +749,7 @@ def copy_with_progress(src, dst, *, follow_symlinks=True):
 def get_nestbox_id(recorders_dir, recorders_info, card, am, filedate):
     try:
         nestbox = recorders_info[(recorders_info['AM'] == str(am)) | (
-            recorders_info['AM'] == int(am))]
+            recorders_info['AM'] == int(am)) | (recorders_info['AM'] == '0' + str(am))]
         nestbox = nestbox[(nestbox['Deployed'] + datetime.timedelta(hours=10) < filedate) &
                           (nestbox['Move_by'] + datetime.timedelta(hours=10) >= filedate)]['Nestbox']
     except:
