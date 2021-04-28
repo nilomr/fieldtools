@@ -1,47 +1,42 @@
 #!/usr/bin/env python3
 
 import inspect
-from fieldtools.src.funs import clean_vols, copy_with_progress, ensure_mount, fetch_recorder_info, find_sdiskpart, get_mountedlist, get_nestbox_id, is_faceplate, umount_and_rmdir, yes_or_no
-from fieldtools.src.aesthetics import tcolor, tstyle
-from fieldtools.version import __version__
-from pathlib2 import Path, PosixPath
-from colorama import Back, Fore, Style, init
-import psutil
-import pandas as pd
-from datetime import date, datetime, timedelta
-import time
-from subprocess import PIPE, Popen, check_output
-import sys
-from textwrap import dedent
-
 import os
-from getpass import getpass, getuser
+import sys
+import time
+from datetime import date
+from subprocess import PIPE, Popen
 
-from sh import mount
-from fieldtools.src.paths import DATA_DIR, OUT_DIR, PROJECT_DIR, safe_makedir
+import pandas as pd
+import psutil
+from colorama import Back, Fore, Style, init
 from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
-                                       qmark, tcolor, tstyle)
-
+                                       tcolor, tstyle)
+from fieldtools.src.funs import (clean_vols, copy_with_progress, ensure_mount,
+                                 fetch_recorder_info, find_sdiskpart,
+                                 get_mountedlist, get_nestbox_id, is_faceplate,
+                                 umount_and_rmdir)
+from fieldtools.src.paths import DATA_DIR, OUT_DIR, safe_makedir, valid_vols_list
+from fieldtools.version import __version__
+from pathlib2 import Path
 
 init(autoreset=True)
 
 # Settings
 
-open_origin_window = False  # Whether to open a nautilus window
-verbose = False  # Whether to print errors for debugging
-check_for_drive = False  # Whether to check if the destination drive is on
+# Whether to open a nautilus window when a new cards is mounted
+open_origin_window = False
+verbose = False  # Whether to print non-critical errors - not complete
+check_for_drive = False  # Whether to check if the destination drive is mounted
+warn_others = True
 
 # Where to copy the files to (AMs)
 DESTINATION_DIR = DATA_DIR / 'raw' / str(date.today().year)
 
-# Names to listen for (here AM codes)
-AM_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")
-           for i in list(range(1, 61))]
-
 # Folders of interest (not currently used)
 folder_names = ['caca' for i in list(range(1, 61))]
 valid_directories = [(name, folder_name)
-                     for name, folder_name in zip(AM_list, folder_names)]
+                     for name, folder_name in zip(valid_vols_list, folder_names)]
 
 # Path to info about recorders
 recorders_dir = OUT_DIR / 'already-recorded-append.csv'
@@ -69,6 +64,13 @@ print(
  Also see: `fieldwork-helper` in the docs
 """, tstyle.rojoroto)
 )
+
+if warn_others:
+    if 'nilomr' in str(OUT_DIR):
+        print(
+            '\n' + info + tstyle.BOLD +
+            tcolor(str(len('This application will not work until you provide your own paths. See the README.')), tstyle.rojoroto))
+        os._exit(0)
 
 if check_for_drive:
     while True:

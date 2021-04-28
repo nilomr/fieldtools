@@ -2,6 +2,7 @@
 
 # Dependencies
 
+import os
 import numpy as np
 import subprocess
 import time
@@ -26,7 +27,7 @@ from tabulate import tabulate
 # Options
 
 verbose = False
-
+warn_others = True
 
 # Paths
 
@@ -46,15 +47,21 @@ recorded_csv = OUT_DIR / "already-recorded.csv"
 
 # Main
 
-# Make sure paths exist
-for path in [OUT_DIR, FIELD_DIR]:
-    safe_makedir(path)
-
 # Print logo
 logo_text = 'Fieldwork Tools'
 font = 'tiny'
 build_logo(__version__, logo_text, font)
 
+# Make sure paths exist
+for path in [OUT_DIR, FIELD_DIR]:
+    safe_makedir(path)
+
+if warn_others:
+    if 'nilomr' in str(PROJECT_DIR):
+        print(
+            '\n' + info + tstyle.BOLD +
+            tcolor(str(len('This application will not work until you provide your own paths. See the README.')), tstyle.rojoroto))
+        os._exit(0)
 
 while True:
 
