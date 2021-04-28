@@ -58,7 +58,7 @@ for path in [OUT_DIR, DESTINATION_DIR]:
     safe_makedir(path)
 
 # Print logo
-build_logo(__version__, logo_text='SD Card Copier_', font='tiny')
+build_logo(__version__, logo_text='SD Card Copier', font='tiny')
 print(
     tcolor("""
  = USE AT YOUR OWN RISK =
