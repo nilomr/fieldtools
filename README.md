@@ -5,21 +5,17 @@
 ![Python 3.8](https://img.shields.io/badge/python-3.8-brightgreen.svg)
 ![R](https://img.shields.io/badge/R-3.6.2-informational)
 
-***
-
-Fieldtools
-===
-
-
 ![gif](/fieldtools/src/fieldwork-helper.gif)
 
 
-#### Table of contents
+## Table of contents
+
   - [Description](#description)
   - [Installation](#installation)
   - [To-do](#to-do)
 
-### Description
+## Description
+
 This repository contains three command line applications that I wrote to help with my field work, which involves copying large amounts of data from SD cards.
 Most of it is very ugly and hacky, but it does its job and might be useful to someone else
 
@@ -29,7 +25,7 @@ Most of it is very ugly and hacky, but it does its job and might be useful to so
 | `format-cards`     | Format multiple cards at the same time: the program listens for volumes with name matching a pattern and mounts, formats, renames, and unmounts them. Whith an option to check that files have been safely backed up before formatting goes ahead. |
 | `fieldwork-helper` | Enter and check data about recorder deployment in nest boxes with known spatial location. It automatically makes .gpx files with a fieldwork plan for the next day based on up-to-date nest progress information. Very specific to my work, but easy to adapt to other sites orprojects. Will not run as is - it needs private files to work. |
 
-### Installation
+## Installation
 
 1. Clone the repository:
 ```bash 
