@@ -214,13 +214,6 @@ while True:
                         continue
                     # Copy file
                     target = DESTINATION_DIR / nestbox
-                    it = 1
-                    while target.exists():  # Ugly but works - do not create new folder if existing has been recently modified
-                        targed_dat = datetime.fromtimestamp(
-                            os.stat(str(target)).st_mtime)
-                        if targed_dat < (filedate - timedelta(hours=1)):
-                            target = DESTINATION_DIR / f'{nestbox}_{it}'
-                            it += 1
                 else:
                     target = faceplate_out
 
