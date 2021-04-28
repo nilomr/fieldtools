@@ -4,18 +4,16 @@ import inspect
 import os
 import re
 import shutil
-import subprocess
 import sys
 import time
 import warnings
 from getpass import getuser
-from pprint import pprint
 from subprocess import PIPE, Popen, check_output
 
 import pandas as pd
 import psutil
 import pygsheets
-from fieldtools.src.aesthetics import arrow, tcolor, tstyle, info
+from fieldtools.src.aesthetics import arrow, info, tcolor, tstyle
 from fieldtools.src.paths import OUT_DIR, PROJECT_DIR, safe_makedir
 from openpyxl.reader.excel import load_workbook
 from pathlib2 import Path, PosixPath
@@ -142,7 +140,7 @@ def write_gpx(filename, newboxes, tocollect):
     safe_makedir(filename)
     gpxfile = open(str(filename), "w")
     gpxfile.write(
-        '<?xml version="1.0"?><gpx version="1.1" creator="Nilo Merino Recalde" >'
+        '<?xml version="1.0"?><gpx version="1.1" creator="Nilo M. Recalde" >'
     )
 
     try:
@@ -208,7 +206,7 @@ def get_faceplate_update():
     gc = pygsheets.authorize(
         service_file=str(PROJECT_DIR / "private" / "client_secret.json")
     )
-    googlekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
+    googlekey = 'ABCDEF'  # The faceplating sheet, substitute your own
     faceplate_info = (
         gc.open_by_key(googlekey)[0]
         .get_as_df(has_header=True, include_tailing_empty=False)
@@ -223,7 +221,7 @@ def get_comments_update():
     gc = pygsheets.authorize(
         service_file=str(PROJECT_DIR / "private" / "client_secret.json")
     )
-    googlekey = '1eJ1yI1vNkoggq72M3j-x9UtcFhew4-xujl64sJJb7tg'  # The faceplating sheet
+    googlekey = 'ABCDEF'  # The comments sheet, substitute your own
     comments_df = (
         gc.open_by_key(googlekey)[0]
         .get_as_df(has_header=True, include_tailing_empty=False)
@@ -234,25 +232,17 @@ def get_comments_update():
 
 
 class workers:
+    """
+    A dictionary of google sheet keys, provide your own - this is just a placeholder
+    """
+
     gdict = {  # ! Change every year
-        "Anett": "1e-So1BfXqhDDSqYSVVDllig_saDUk2d0zwRpwsVi0iI",
-        "Joe": "1lOjeo7EHy1qe8rqj-T6QsiTxISLebH-GolJh1DrIWL8",
-        "Nilo": "1qII34MKHEq3Sl0a86t2EObqcXii3Sw6x3AlDRaO-caA",
-        "Kristina": "1OBjYxloyuCEqpcM_C3cDjNiHb2k1LN7hnthAbKoKhS0",
-        "Keith": "1T17oU0sHK3D3ocHSQThXSPy0oZmvcEu0oHE99-Mto7U",
-        "Julia": "1E3MkhVZvQXLLd3vuaz4I6mnVFOZbse9Nwbavhqyw8Qw",
-        "Carys": "1toHQ4R2btmQdMzVFgtlC6pE67unmHY3i0qp-BOfkjUc",
-        "Sam": "1Y8iBGVTm1qw-eIqW2wSn6eG3FK7tVyvN2x2nEiPb-3w",
+        "Jane": "AB23CD3sry3F",
+        "John": "AB23CD3sry3F"
     }
     rounds_dict = {
-        'Bean': 'Joe',
-        'Broad Oak': 'Julia',
-        'Common Piece': 'Kristina',
-        'Extra': 'Nilo',
-        'Great Wood': 'Sam',
-        'Marley': 'Keith',
-        'Marley Plantation': 'Anett',
-        'Singing Way': 'Carys',
+        'Bean': 'Jane',
+        'Broad Oak': 'John',
     }
 
 
@@ -271,37 +261,18 @@ def get_nestbox_update():
         leave=True,
         bar_format='{desc}: {percentage:3.0f}%'
     ):
-        name = worker
-        if name == "Sam":
-            worker = gc.open_by_key(googlekey)[0].get_as_df(
-                has_header=True, include_tailing_empty=False).loc[:, :'fledge']
-            if "" in worker.columns:
-                worker = worker.drop([""], axis=1)
-            # worker = worker.rename(
-            #     columns=worker.iloc[0]).drop(worker.index[0])
-            worker = (
-                worker.rename(
-                    columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
-                .query("Nestbox == Nestbox")
-                .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-                .replace(0, "no")
-                .replace('', "no")
-            )
-            worker.insert(1, "Owner", "Sam")
-        else:
-            worker = gc.open_by_key(googlekey)[0].get_as_df(
-                has_header=False, include_tailing_empty=False)
-            worker = worker.rename(
-                columns=worker.iloc[0]).drop(worker.index[0])
-            if "" in worker.columns:
-                worker = worker.drop([""], axis=1)
-            worker = (
-                worker.query("Nestbox == Nestbox")
-                .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
-                .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-                .replace("", "no")
-            )
-            worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
+        worker = gc.open_by_key(googlekey)[0].get_as_df(
+            has_header=False, include_tailing_empty=False)
+        worker = worker.rename(
+            columns=worker.iloc[0]).drop(worker.index[0])
+        if "" in worker.columns:
+            worker = worker.drop([""], axis=1)
+        worker = (
+            worker.query("Nestbox == Nestbox")
+            .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
+            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
+            .replace("", "no")
+        )
         which_greti = which_greti.append(worker)
 
     # Now get faceplating info and join
@@ -317,35 +288,18 @@ def get_single_gsheet(name, key):
         service_file=str(PROJECT_DIR / "private" /
                          "client_secret.json")
     )
-    if name == "Sam":
-        worker = gc.open_by_key(key)[0].get_as_df(
-            has_header=True, include_tailing_empty=False).loc[:, :'fledge']
-        if "" in worker.columns:
-            worker = worker.drop([""], axis=1)
-        # worker = worker.rename(columns=worker.iloc[0]).drop(worker.index[0])
-        worker = (
-            worker.rename(
-                columns={"Num eggs": "Eggs", "number": "Nestbox", "State code": "Nest"})
-            .query("Nestbox == Nestbox")
-            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-            .replace(0, "no")
-            .replace('', "no")
-        )
-        worker.insert(1, "Owner", "Sam")
-    else:
-        worker = gc.open_by_key(key)[0].get_as_df(
-            has_header=False, include_tailing_empty=False)
-        worker = worker.rename(
-            columns=worker.iloc[0]).drop(worker.index[0])
-        if "" in worker.columns:
-            worker = worker.drop([""], axis=1)
-        worker = (
-            worker.query("Nestbox == Nestbox")
-            .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
-            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-            .replace("", "no")
-        )
-        worker['Owner'].replace('Julia Haynes', 'Julia', inplace=True)
+    worker = gc.open_by_key(key)[0].get_as_df(
+        has_header=False, include_tailing_empty=False)
+    worker = worker.rename(
+        columns=worker.iloc[0]).drop(worker.index[0])
+    if "" in worker.columns:
+        worker = worker.drop([""], axis=1)
+    worker = (
+        worker.query("Nestbox == Nestbox")
+        .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
+        .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
+        .replace("", "no")
+    )
     return worker.query("Nestbox != 'no'")
 
 
