@@ -1,10 +1,10 @@
+
+# Fieldtools
 ![version](https://img.shields.io/badge/package_version-0.1.0-orange)
 ![PyPI status](https://img.shields.io/pypi/status/ansicolortags.svg)
 ![license](https://img.shields.io/github/license/mashape/apistatus.svg)
 ![Python 3.8](https://img.shields.io/badge/python-3.8-brightgreen.svg)
 ![OS](https://img.shields.io/badge/GNU/Linux-debian_derivatives-lightgrey.svg)
-***
-# Fieldtools
 ![gif](/fieldtools/src/fieldwork-helper.gif)
 
 ## Table of contents
