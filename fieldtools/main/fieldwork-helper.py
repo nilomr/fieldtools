@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Dependencies --------------------------
+# Dependencies
 
 import numpy as np
 import subprocess
@@ -38,14 +38,10 @@ RPLOTS = EGO_DIR / "plot-new-boxes.R"
 coords_csv = PROJECT_DIR / "resources" / \
     'nestboxes' / "nestbox_coords_transformed.csv"
 
-# only append data here. Manual creation for now
+# Append-only. Manual creation for now
 recorded_csv_append = OUT_DIR / "already-recorded-append.csv"
-# editable: remove if you want to record again.
+# Manually editable: remove an entry if you want to record it again.
 recorded_csv = OUT_DIR / "already-recorded.csv"
-
-
-class Error(Exception):
-    pass
 
 
 # Main
@@ -55,7 +51,7 @@ for path in [OUT_DIR, FIELD_DIR]:
     safe_makedir(path)
 
 # Print logo
-logo_text = 'Fieldwork helper_'
+logo_text = 'Fieldwork Tools'
 font = 'tiny'
 build_logo(__version__, logo_text, font)
 
@@ -72,7 +68,7 @@ while True:
     questions = [
         {
             'type': 'list',
-            'message': ' Options',
+            'message': 'Options',
             'name': 'option',
             'choices': [
                 {'name': 'Get a progress report'},
@@ -218,9 +214,9 @@ while True:
 
         # Fix and print new great tit data
         table_p = diff_df.drop(["longitude", "latitude", 'x', 'y', 'nestbox',
-                                'box type', 'Added'], 1).rename(columns={"section": "Section"})
-        print(tabulate(table_p, headers="keys",
-                       showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
+                                'box type', 'Added', 'Comments', 'Owner'], 1).rename(columns={"section": "Section"})
+        print(tabulate(table_p.iloc[0:5], headers="keys",
+                       showindex=False, tablefmt="basic").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))  # .replace('Nestbox', '  Nestbox')) # use this if tablefmt = 'basic' or whatever
 
         # Save to a .csv
         newpath = OUT_DIR / str("new_" + str(date.today()) + ".csv")

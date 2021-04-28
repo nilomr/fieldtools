@@ -215,7 +215,7 @@ def get_faceplate_update():
         .filter(['Nestbox', 'Species'])
         .query('Species == "g" or Species == "G" or Species == "sp=g"')
     )
-    print(arrow + "Downloading faceplating data: 100%")
+    print(arrow + "Downloading species data: 100%")
     return faceplate_info['Nestbox'].tolist()
 
 
