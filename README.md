@@ -4,8 +4,7 @@
 ![PyPI status](https://img.shields.io/pypi/status/ansicolortags.svg)
 ![license](https://img.shields.io/github/license/mashape/apistatus.svg)
 ![Python 3.8](https://img.shields.io/badge/python-3.8-brightgreen.svg)
-![OS](https://img.shields.io/badge/GNU/Linux-debian_derivatives-lightgrey.svg)
-<br/>
+![OS](https://img.shields.io/badge/GNU/Linux-debian_derivatives-lightgrey.svg) \
 ![gif](/fieldtools/src/fieldwork-helper.gif)
 
 ## Table of contents
@@ -16,7 +15,7 @@
 
 ## Description
 
-This repository contains three command line applications that I wrote to help with my field work.
+This repository contains three simple command line applications that I wrote to help with some aspects of my field work.
 Most of it is very hacky, but it does its job and might be useful to someone else. It is written in Python and Bash, and it has not been tested outside Debian/Ubuntu*. 
 
 | command            | description                                                  |
