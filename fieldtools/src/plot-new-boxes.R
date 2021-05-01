@@ -9,7 +9,7 @@ options(warn=-1)
 options(readr.num_columns = 0)
 # print('Making and saving plots')
 
-package_names <- gc()
+
 package_names <- c(
     "tidyverse",
     "devtools",
