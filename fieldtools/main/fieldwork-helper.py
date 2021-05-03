@@ -214,8 +214,8 @@ while True:
 
         # Fix and print new great tit data
         table_p = diff_df.drop(["longitude", "latitude", 'x', 'y', 'nestbox',
-                                'box type', 'Added', 'Comments', 'Owner'], 1).rename(columns={"section": "Section"})
-        print(tabulate(table_p.iloc[0:5], headers="keys",
+                                'box type', 'Added'], 1).rename(columns={"section": "Section"})
+        print(tabulate(table_p, headers="keys",
                        showindex=False, tablefmt="basic").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))  # .replace('Nestbox', '  Nestbox')) # use this if tablefmt = 'basic' or whatever
 
         # Save to a .csv

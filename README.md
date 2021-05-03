@@ -16,8 +16,8 @@
 
 ## Description
 
-This repository contains three command line applications that I wrote to help with my field work, which involves copying large amounts of data from SD cards.
-Most of it is very ugly and hacky, but it does its job and might be useful to someone else
+This repository contains three command line applications that I wrote to help with my field work.
+Most of it is very hacky, but it does its job and might be useful to someone else.
 
 | command            | description                                                  |
 | :----------------- | :----------------------------------------------------------- |

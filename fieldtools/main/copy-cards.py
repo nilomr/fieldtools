@@ -195,6 +195,15 @@ while True:
                 if len(files) == 0:
                     print(f'Card {card[1]} seems to be empty, skipping.')
                     already_done.append(card[1])
+                    # Unmount card, remove mount point
+                    try:
+                        p = find_sdiskpart(card[0])
+                    except psutil.Error:
+                        print('Something went wrong :D')
+                    while os.path.exists(card[0]):
+                        umount_and_rmdir(0, card)
+                        if verbose:
+                            print('Trying to umount again')
                     continue
 
                 # get AM number
@@ -252,7 +261,6 @@ while True:
                 p = find_sdiskpart(card[0])
             except psutil.Error:
                 print('Something went wrong :D')
-
             while os.path.exists(card[0]):
                 umount_and_rmdir(0, card)
                 if verbose:

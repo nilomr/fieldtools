@@ -7,3 +7,5 @@ fieldtools.egg-info
 dist
 dist/
 build/
+
+get-metadata.py

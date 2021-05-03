@@ -376,7 +376,7 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
         if len1 != len2:
             print(
                 info + f'Removed {len1 - len2} nestboxes that were of blue tit type')
-            # print(which_wrong)
+            print(which_wrong)
         which_greti_1.to_pickle(str(picklename))
 
     # Check which nestboxes have already been recorded
