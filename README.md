@@ -39,10 +39,10 @@ Most of it is very hacky, but it does its job and might be useful to someone els
   conda env create --file requirements.yml && conda activate fieldtools-env
 ```
 3. Install source code: `pip install .` (install) or `pip install -e .` (developer install).
-4. Make symlinks to scripts to copy/format cards and enter field data. You can change the paths in the bash script file as needed, then run
+4. Make symlinks to scripts to copy/format cards and enter field data. You can change the paths in the bash script file if needed, then run
 
 ```bash
-sudo bash dependencies/fieldwork-setup.sh
+sudo bash fieldtools/bash/setup.sh
 ```
 
 5. Run `conda deactivate` if you are still in the newly created 'fieldtools-env' environment.
@@ -53,7 +53,6 @@ sudo bash dependencies/fieldwork-setup.sh
 
 
 ### To Do
- - [x] Start refactoring
  - [ ] Finish refactoring
  - [ ] Create a separate 'user settings' file
  - [ ] Add documentation
