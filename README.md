@@ -23,7 +23,7 @@ Most of it is very hacky, but it does its job and might be useful to someone els
 | :----------------- | :----------------------------------------------------------- |
 | `copy-cards`       | Listens for SD cards and copies and organises their content automatically. |
 | `format-cards`     | Format multiple cards at the same time: the program listens for volumes with name matching a pattern and mounts, formats, renames, and unmounts them. Whith an option to check that files have been safely backed up before formatting goes ahead. |
-| `fieldwork-helper` | Enter and check data about recorder deployment in nest boxes with known spatial location. It automatically makes .gpx files with a fieldwork plan for the next day based on up-to-date nest progress information. Very specific to my work, but easy to adapt to other sites orprojects. Will not run as is - it needs private files to work. |
+| `fieldwork-helper` | Enter and check data about recorder deployment in nest boxes with known spatial location. It automatically generates .gpx files with a fieldwork plan for the next day based on up-to-date nest state information. Very specific to my work, but easy to adapt to other sites or projects. Will NOT run as is - it needs private database access keys to work. |
 
 *In other words, there is no reason to expect that they will work outside a Debian derivative.
 ## Installation
