@@ -28,7 +28,7 @@ init(autoreset=True)
 open_origin_window = False
 verbose = False  # Whether to print non-critical errors - not complete
 check_for_drive = False  # Whether to check if the destination drive is mounted
-warn_others = True
+warn_others = False
 
 # Where to copy the files to (AMs)
 DESTINATION_DIR = DATA_DIR / 'raw' / str(date.today().year)
@@ -69,7 +69,10 @@ if warn_others:
     if 'nilomr' in str(OUT_DIR):
         print(
             '\n' + info + tstyle.BOLD +
-            tcolor(str(len('This application will not work until you provide your own paths. See the README.')), tstyle.rojoroto))
+            tcolor("""
+ This application will not work until you provide 
+ your own paths and settings. See the README.
+ """, tstyle.rojoroto))
         os._exit(0)
 
 if check_for_drive:

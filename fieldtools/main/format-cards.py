@@ -20,7 +20,7 @@ from pathlib2 import Path
 skip_empty = False  # Wether to skip already empty cards
 safe_copy = False  # Wether to ensure that files exist before allowing formatting
 verbose = False
-warn_others = True
+warn_others = False
 
 # Folders of interest (not currently used)
 folder_names = ['caca' for i in list(range(1, 61))]
@@ -44,12 +44,14 @@ print(
  pattern, currently [AM00, F0000].
 """, tstyle.rojoroto)
 )
-
 if warn_others:
     if 'nilomr' in str(OUT_DIR):
         print(
             '\n' + info + tstyle.BOLD +
-            tcolor(str(len('This application will not work until you provide your own paths. See the README.')), tstyle.rojoroto))
+            tcolor("""
+ This application will not work until you provide 
+ your own paths and settings. See the README.
+ """, tstyle.rojoroto))
         os._exit(0)
 
 # Store volumes that have been already formatted

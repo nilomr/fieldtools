@@ -548,7 +548,6 @@ def clean_vols():
     devnull = open(os.devnull, 'wb')
     print(info + 'Cleaning mounted volumes')
     mountdir = os.path.join(os.sep, 'media', getuser()) + os.sep
-    print(any_mounted(mountdir))
     while any_mounted(mountdir):
         print(
             info + tcolor('Please remove any cards from the card reader', tstyle.rojoroto), end="\r")
