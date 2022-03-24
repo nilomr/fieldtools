@@ -266,7 +266,6 @@ while True:
                 p = find_sdiskpart(card[0])
             except psutil.Error:
                 print('Something went wrong :D')
-
             while os.path.exists(card[0]):
                 umount_and_rmdir(0, card)
                 if verbose:

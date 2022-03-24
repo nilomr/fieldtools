@@ -145,18 +145,18 @@ def write_gpx(filename, newboxes, tocollect):
 
     try:
         allpoints = newboxes.query(
-            'Eggs == "no"').filter(["Nestbox", "longitude", "latitude"])
+            'Eggs == "no"').filter(["Nestbox", "Nest", "longitude", "latitude"])
         allpoints_transformed = allpoints.assign(
             **{"lon": allpoints["longitude"], "lat": allpoints["latitude"]}
         ).to_dict(orient="records")
 
         for box in allpoints_transformed:
             poi = '<wpt lat="{}" lon="{}"><name>{}</name><sym>{}</sym></wpt>'.format(
-                box["lat"], box["lon"], box["Nestbox"], "poi_green"
-            )
+                box["lat"], box["lon"], box["Nestbox"], f'number-{int(box["Nest"])}')
             gpxfile.write(poi)
 
-    except Exception:
+    except Exception as e:
+        print(e)
         pass
 
     try:
@@ -168,11 +168,11 @@ def write_gpx(filename, newboxes, tocollect):
 
         for box in eggs_transformed:
             poi = '<wpt lat="{}" lon="{}"><name>{}</name><sym>{}</sym></wpt>'.format(
-                box["lat"], box["lon"], box["Nestbox"], "helipad"
-            )
+                box["lat"], box["lon"], box["Nestbox"], "emoji-🥚")
             gpxfile.write(poi)
 
-    except Exception:
+    except Exception as e:
+        print(e)
         pass
 
     try:
@@ -183,11 +183,11 @@ def write_gpx(filename, newboxes, tocollect):
 
         for box in collect_transformed:
             poi = '<wpt lat="{}" lon="{}"><name>{}</name><sym>{}</sym></wpt>'.format(
-                box["lat"], box["lon"], box["Nestbox"], "poi_red"
-            )
+                box["lat"], box["lon"], box["Nestbox"], "red-pin-down")
             gpxfile.write(poi)
 
-    except Exception:
+    except Exception as e:
+        print(e)
         pass
 
     gpxfile.write("</gpx>")
@@ -221,7 +221,7 @@ def get_comments_update():
     gc = pygsheets.authorize(
         service_file=str(PROJECT_DIR / "private" / "client_secret.json")
     )
-    googlekey = 'ABCDEF'  # The comments sheet, substitute your own
+    googlekey = '1Mz8zK6l3G_C3nQLexLflr71atGn_YrTqPH6rxUTp3IE'  # The faceplating sheet
     comments_df = (
         gc.open_by_key(googlekey)[0]
         .get_as_df(has_header=True, include_tailing_empty=False)
@@ -237,12 +237,23 @@ class workers:
     """
 
     gdict = {  # ! Change every year
-        "Jane": "AB23CD3sry3F",
-        "John": "AB23CD3sry3F"
+        "Anett": "1zTSPOwiY_CdvUpRGpbGxT2k8YH7auHuZnTt4njYQaB0",
+        "Joe": "15O1XiJRj_9tVPlrh6mEfGwVdZsbVpeZlmjgKitu2VHk",
+        "Nilo": "1yGv5teaeQaia697HXxs-jAH-RkVANcV5tkR5-LqkmRg",
+        "Kristina": "1mDqdrN231TDFegJ1pZR81qdtPmO2OsYM8yOcbGbVZso",
+        "Keith": "1FoOm7tWQmseNZH4bXAVi1kAxUtzwp8qqcgF7tgArwFo",
+        "Carys": "1BTGrfUJeBW9HTohu6tZ3AQBYK-zVBNNKmmtESawfTWo",
+        "Sam": "1Y8iBGVTm1qw-eIqW2wSn6eG3FK7tVyvN2x2nEiPb-3w",
     }
     rounds_dict = {
-        'Bean': 'Jane',
-        'Broad Oak': 'John',
+        'Bean': 'Joe',
+        'Broad Oak': 'Carys',
+        'Common Piece': 'Kristina',
+        'Extra': 'Nilo',
+        'Great Wood': 'Sam',
+        'Marley': 'Anett',
+        'Marley Plantation': 'Anett',
+        'Singing Way': 'Keith',
     }
 
 
@@ -252,7 +263,7 @@ def get_nestbox_update():
     )
     # Download and append personal sheets
     workerdict = workers.gdict
-    which_greti = pd.DataFrame(columns=["Nestbox", "Owner"])
+    which_greti = pd.DataFrame(columns=["Nestbox", "웃"])
 
     for worker, googlekey in tqdm(
         workerdict.items(),
@@ -261,24 +272,30 @@ def get_nestbox_update():
         leave=True,
         bar_format='{desc}: {percentage:3.0f}%'
     ):
-        worker = gc.open_by_key(googlekey)[0].get_as_df(
-            has_header=False, include_tailing_empty=False)
-        worker = worker.rename(
-            columns=worker.iloc[0]).drop(worker.index[0])
-        if "" in worker.columns:
-            worker = worker.drop([""], axis=1)
-        worker = (
-            worker.query("Nestbox == Nestbox")
-            .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
-            .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-            .replace("", "no")
-        )
-        which_greti = which_greti.append(worker)
+        name = worker
+        if name == "Sam":
+            pass
+        else:
+            worker = gc.open_by_key(googlekey)[0].get_as_df(
+                has_header=False, include_tailing_empty=False)
+            worker = worker.rename(
+                columns=worker.iloc[0]).drop(worker.index[0])
+            if "" in worker.columns:
+                worker = worker.drop([""], axis=1)
+            worker = (worker.query("Pnum == Pnum").rename(
+                columns={"Pnum": "Nestbox",
+                         "weigh eggs (optional)": "Eggs",
+                         "Clutch size": "Clutch",
+                         "State code": "Nest", "Fieldworker": "웃"}).filter(
+                ["Nestbox", "웃", "Eggs", "Clutch", 'Nest', 'Species']).replace("", "no"))
+
+            which_greti = which_greti.append(worker)
 
     # Now get faceplating info and join
-    greti_faceplated = get_faceplate_update()
+    # greti_faceplated = get_faceplate_update()
     combined = which_greti.query(
-        'Species == "g" or Species == "G" or Species == "sp=g" or Nestbox in @greti_faceplated').drop('Species', 1)
+        'Species == "g" or Species == "G" or '
+        'Species == "sp=g"').drop('Species', 1)
 
     return combined
 
@@ -288,27 +305,28 @@ def get_single_gsheet(name, key):
         service_file=str(PROJECT_DIR / "private" /
                          "client_secret.json")
     )
-    worker = gc.open_by_key(key)[0].get_as_df(
-        has_header=False, include_tailing_empty=False)
-    worker = worker.rename(
-        columns=worker.iloc[0]).drop(worker.index[0])
-    if "" in worker.columns:
-        worker = worker.drop([""], axis=1)
-    worker = (
-        worker.query("Nestbox == Nestbox")
-        .rename(columns={"Clutch Size": "Eggs", "Num eggs": "Eggs", "Num Eggs": "Eggs", "Clutch size": "Eggs", "State code": "Nest", "State Code": "Nest"})
-        .filter(["Nestbox", "Owner", "Eggs", 'Nest', 'Species'])
-        .replace("", "no")
-    )
-    return worker.query("Nestbox != 'no'")
+    if name == "Sam":
+        pass
+    else:
+        worker = gc.open_by_key(key)[0].get_as_df(
+            has_header=False, include_tailing_empty=False)
+        worker = worker.rename(
+            columns=worker.iloc[0]).drop(worker.index[0])
+        if "" in worker.columns:
+            worker = worker.drop([""], axis=1)
+        worker = (worker.query("Pnum == Pnum").rename(
+            columns={"Pnum": "Nestbox",
+                     "weigh eggs (optional)": "Eggs",
+                     "Clutch size": "Eggs1",
+                     "State code": "Nest", "Fieldworker": "웃"}).filter(
+            ["Nestbox", "웃", "Eggs", 'Nest', 'Species']).replace("", "no"))
+
+        return worker.query("Nestbox != 'no'")
 
 
 def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
-    picklename = OUT_DIR / (
-        str(
-            f"allrounds_{str(pd.Timestamp('today', tz='UTC').strftime('%Y%m%d'))}.pkl"
-        )
-    )
+    picklename = OUT_DIR / (str(
+        f"allrounds_{str(pd.Timestamp('today', tz='UTC').strftime('%Y%m%d'))}.pkl"))
     if len(which_greti) == 0:
         print(info + "There are no GRETI nestboxes yet")
         return [], []
@@ -329,8 +347,9 @@ def get_recorded_gretis(recorded_csv, nestbox_coords, which_greti):
         len2 = len(which_greti_1)
         if len1 != len2:
             print(
-                info + f'Removed {len1 - len2} nestboxes that were of blue tit type')
-            # print(which_wrong)
+                info +
+                f'Removed {len1 - len2} nestboxes that were of blue tit type')
+            print(which_wrong)
         which_greti_1.to_pickle(str(picklename))
 
     # Check which nestboxes have already been recorded
@@ -464,19 +483,23 @@ def parse_blkid(valid_directories, output):
     for ls in output:
         for sbls in ls:
             if sbls.startswith('LABEL'):
-                name = re.findall(r'"(.*?)"', sbls)[0]
-                if (
-                    name[0] == 'F' and len(name) == 5 and
-                    name[1:4].isnumeric() or
-                    name in [am[0] for am in valid_directories]
-                ):
-                    devpath = str(ls[0]).replace(
-                        ':', '').replace('b\'', '')
-                    valid_devices.append([name, devpath])
+                try:
+                    name = re.findall(r'"(.*?)"', sbls)[0]
+                    if (
+                        name[0] == 'F' and len(name) == 5 and
+                        name[1:4].isnumeric() or
+                        name in [am[0] for am in valid_directories]
+                    ):
+                        devpath = str(ls[0]).replace(
+                            ':', '').replace('b\'', '')
+                        valid_devices.append([name, devpath])
+                except:
+                    return None
     return valid_devices
 
 
-def ensure_mount(valid_directories, password, checked_cards, already_done, verbose):
+def ensure_mount(
+        valid_directories, password, checked_cards, already_done, verbose):
     devnull = open(os.devnull, 'wb')
     mounted = get_mountedlist()
     blkid = "sudo blkid"
@@ -500,7 +523,9 @@ def ensure_mount(valid_directories, password, checked_cards, already_done, verbo
                 if os.path.exists(target_dir):
                     if verbose:
                         print(
-                            tcolor(f'The mount point {target_dir} already exists', tstyle.rojoroto))
+                            tcolor(
+                                f'The mount point {target_dir} already exists',
+                                tstyle.rojoroto))
                     # Delete mount point
                     delmount = f"sudo rmdir {target_dir}"
                     proc5 = Popen(["/bin/bash", "-c", delmount],
@@ -550,7 +575,11 @@ def clean_vols():
     mountdir = os.path.join(os.sep, 'media', getuser()) + os.sep
     while any_mounted(mountdir):
         print(
-            info + tcolor('Please remove any cards from the card reader', tstyle.rojoroto), end="\r")
+            info +
+            tcolor(
+                'Please remove any cards from the card reader',
+                tstyle.rojoroto),
+            end="\r")
         time.sleep(1)
 
         umount = f"sudo umount {mountdir}F* {mountdir}AM*"

@@ -19,10 +19,10 @@
 This repository contains three simple command line applications that I wrote to help with some aspects of my field work.
 Most of it is very hacky, but it does its job and might be useful to someone else. It is written in Python and Bash, and it has not been tested outside Debian/Ubuntu*. 
 
-| command            | description                                                  |
-| :----------------- | :----------------------------------------------------------- |
-| `copy-cards`       | Listens for SD cards and copies and organises their content automatically. |
-| `format-cards`     | Format multiple cards at the same time: the program listens for volumes with name matching a pattern and mounts, formats, renames, and unmounts them. Whith an option to check that files have been safely backed up before formatting goes ahead. |
+| command            | description                                                                                                                                                                                                                                                                                                                                                    |
+| :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `copy-cards`       | Listens for SD cards and copies and organises their content automatically.                                                                                                                                                                                                                                                                                     |
+| `format-cards`     | Format multiple cards at the same time: the program listens for volumes with name matching a pattern and mounts, formats, renames, and unmounts them. Whith an option to check that files have been safely backed up before formatting goes ahead.                                                                                                             |
 | `fieldwork-helper` | Enter and check data about recorder deployment in nest boxes with known spatial location. It automatically generates .gpx files with a fieldwork plan for the next day based on up-to-date nest state information. Very specific to my work, but easy to adapt to other sites or projects. Will NOT run as is - it needs private database access keys to work. |
 
 *In other words, there is no reason to expect that they will work outside a Debian derivative.
