@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # Dependencies
-
 import os
 import subprocess
 import time
