@@ -2,24 +2,25 @@
 
 # Dependencies
 
-import numpy as np
 import subprocess
 import time
 from datetime import date, datetime, timedelta
 from pprint import pprint
 from textwrap import dedent
 
+import numpy as np
 import pandas as pd
 from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
                                        menu_aes, print_dict, qmark, tcolor,
                                        tstyle)
-from fieldtools.src.funs import (get_full_faceplate_info, get_nestbox_update, get_recorded_gretis,
-                                 get_single_gsheet, order, reconstruct_path,
-                                 split_path, workers, write_gpx, yes_or_no)
+from fieldtools.src.funs import (get_full_faceplate_info, get_nestbox_update,
+                                 get_recorded_gretis, get_single_gsheet, order,
+                                 reconstruct_path, split_path, workers,
+                                 write_gpx, yes_or_no)
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
                                   safe_makedir)
 from fieldtools.version import __version__
-from pathlib2 import Path
+from pathlib import Path
 from PyInquirer import prompt
 from tabulate import tabulate
 
@@ -92,11 +93,11 @@ while True:
         while True:
 
             # * Enter nestboxes while loop
-            print(qmark + tstyle.BOLD +
-                  tcolor(
-                      'Please enter all nestbox names separated by a single space:', tstyle.mustard) +
-                  '\ne.g., SW84A EX20 C47'
-                  )
+            print(
+                qmark + tstyle.BOLD +
+                tcolor(
+                    'Please enter all nestbox names separated by a single space:',
+                    tstyle.mustard) + '\ne.g., SW84A EX20 C47')
             while True:
 
                 names = input().upper().strip().split(" ")
@@ -109,17 +110,17 @@ while True:
                                  sum(nestbox_coords["Nestbox"].isin(names)))
                     print(
                         tcolor(
-                            f'{nwrong} out of {str(len(names))} entered names do not exist, try again:', tstyle.rojoroto)
-                    )
+                            f'{nwrong} out of {str(len(names))} entered names do not exist, try again:',
+                            tstyle.rojoroto))
                     continue
 
             # * Enter recorders while loop
             print('')
-            print(qmark + tstyle.BOLD +
-                  tcolor(
-                      'Now enter the recorder numbers, also separated by spaces:', tstyle.mustard) +
-                  '\ne.g., 01 23 15'
-                  )
+            print(
+                qmark + tstyle.BOLD +
+                tcolor(
+                    'Now enter the recorder numbers, also separated by spaces:',
+                    tstyle.mustard) + '\ne.g., 01 23 15')
             while True:
 
                 recorders = input().upper().strip().split(" ")
@@ -129,21 +130,21 @@ while True:
                 except:
                     print(
                         tcolor(
-                            "The string contains non-numerical characters, try again:", tstyle.rojoroto)
-                    )
+                            "The string contains non-numerical characters, try again:",
+                            tstyle.rojoroto))
                     continue
 
                 if len(names) != len(recorders):
                     print(
                         tcolor(
-                            "The number of recorders does not match the number of nestboxes, try again:", tstyle.rojoroto)
-                    )
+                            "The number of recorders does not match the number of nestboxes, try again:",
+                            tstyle.rojoroto))
                     continue
                 elif any(len(str(i)) != 2 for i in recorders):
                     print(
                         tcolor(
-                            "Recorder numbers can only have two digits, try again:", tstyle.rojoroto)
-                    )
+                            "Recorder numbers can only have two digits, try again:",
+                            tstyle.rojoroto))
                     continue
                 else:
                     break
@@ -163,9 +164,11 @@ while True:
 
         # * Enter date block
         print('')
-        if not yes_or_no(qmark + tstyle.BOLD +
-                         tcolor(
-                             f"Is {str(date.today())} the date when you deployed these recorders?", tstyle.mustard)):
+        if not yes_or_no(
+            qmark + tstyle.BOLD +
+            tcolor(
+                f"Is {str(date.today())} the date when you deployed these recorders?",
+                tstyle.mustard)):
             print("Enter the correct date in the same format:")
             day = input()
             day = datetime.strptime(day, "%Y-%m-%d").date()
@@ -186,10 +189,11 @@ while True:
         with open(recorded_csv_append, 'a') as f:
             new_boxes.to_csv(f, header=True, index=False)
 
-        print(tstyle.BOLD +
-              tcolor(
-                  f"Done. You can check all added nestboxes at {str(recorded_csv.name)}", tstyle.teal)
-              )
+        print(
+            tstyle.BOLD +
+            tcolor(
+                f"Done. You can check all added nestboxes at {str(recorded_csv.name)}",
+                tstyle.teal))
         continue
 
     elif answer == 'Get a progress report':  # * get nestboxes to be visited
@@ -213,10 +217,12 @@ while True:
             continue
 
         # Fix and print new great tit data
-        table_p = diff_df.drop(["longitude", "latitude", 'x', 'y', 'nestbox',
-                                'box type', 'Added'], 1).rename(columns={"section": "Section"})
-        print(tabulate(table_p, headers="keys",
-                       showindex=False, tablefmt="basic").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))  # .replace('Nestbox', '  Nestbox')) # use this if tablefmt = 'basic' or whatever
+        table_p = diff_df.drop(
+            ["longitude", "latitude", 'x', 'y', 'nestbox', 'box type', 'Added'],
+            1).rename(
+            columns={"section": "Section"})
+        print(tabulate(table_p, headers="keys", showindex=False, tablefmt="basic").replace('\n', '\n  ').replace(
+            'Nestbox', '  Nestbox'))  # .replace('Nestbox', '  Nestbox')) # use this if tablefmt = 'basic' or whatever
 
         # Save to a .csv
         newpath = OUT_DIR / str("new_" + str(date.today()) + ".csv")
@@ -261,10 +267,10 @@ while True:
                 time.sleep(.1)
                 it += 1
             outdir = reconstruct_path(split_path(str(OUT_DIR))[-4:])
-            print(tstyle.BOLD +
-                  tcolor(
-                      f"Done. You can check your plots at {outdir}", tstyle.teal)
-                  )
+            print(
+                tstyle.BOLD +
+                tcolor(
+                    f"Done. You can check your plots at {outdir}", tstyle.teal))
 
             # Export gpx
             while True:
@@ -299,8 +305,11 @@ while True:
                               diff_df, move_today)
 
                     outdir = reconstruct_path(split_path(str(GPX_DIR))[-5:])
-                    print(tstyle.BOLD +
-                          tcolor(f"Done. You can find your .gpx file at {outdir}", tstyle.teal))
+                    print(
+                        tstyle.BOLD +
+                        tcolor(
+                            f"Done. You can find your .gpx file at {outdir}",
+                            tstyle.teal))
                     break
 
                 elif answer == f"Tomorrow's ({tomorrow})":
@@ -314,8 +323,11 @@ while True:
                                       ".gpx"), diff_df, move_tomorrow
                     )
                     outdir = reconstruct_path(split_path(str(GPX_DIR))[-5:])
-                    print(tstyle.BOLD +
-                          tcolor(f"Done. You can find your .gpx file at {outdir}", tstyle.teal))
+                    print(
+                        tstyle.BOLD +
+                        tcolor(
+                            f"Done. You can find your .gpx file at {outdir}",
+                            tstyle.teal))
                     break
 
                 elif answer == "None":
@@ -360,8 +372,8 @@ while True:
 
         # Get the data from faceplating. Get birds with known ID or detected but without PIT tag
         faceplate_df = get_full_faceplate_info().query('Nestbox == Nestbox')
-        mask = faceplate_df.query(
-            'Species != "g" and Species != "b"')["Comments"].str.lower().str.contains('unringed')
+        mask = faceplate_df.query('Species != "g" and Species != "b"')[
+            "Comments"].str.lower().str.contains('unringed')
         unringed = faceplate_df.query(
             'Species != "g" and Species != "b"').query("@mask")[
             'Nestbox'].tolist()
@@ -376,7 +388,9 @@ while True:
 
         # Get already recorded boxes
         if not Path(recorded_csv).exists():
-            print(info + '.csv file with recorded nestboxes does not exist, creating it.')
+            print(
+                info +
+                '.csv file with recorded nestboxes does not exist, creating it.')
             recorded_empty = pd.DataFrame(
                 columns=['Nestbox', 'AM', 'longitude', 'latitude', 'Deployed', 'Move_by'])
             recorded_empty.to_csv(recorded_csv, index=False)
@@ -401,8 +415,8 @@ while True:
     result = result.sort_values(
         ['Eggs', 'Nest', 'Species'], ascending=[False, False, True])
 
-    print(tabulate(result, headers="keys",
-                   showindex=False, tablefmt="simple").replace('\n', '\n  ').replace('Nestbox', '  Nestbox'))
+    print(tabulate(result, headers="keys", showindex=False, tablefmt="simple").replace(
+        '\n', '\n  ').replace('Nestbox', '  Nestbox'))
     print('\n  N: ' + str(len(result)))
     continue
 
