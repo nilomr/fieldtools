@@ -5,15 +5,14 @@
 
 import os
 import time
-from datetime import datetime
 from subprocess import PIPE, Popen
 import psutil
-from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
-                                       qmark, tcolor, tstyle)
+from fieldtools.src.aesthetics import (
+    arrow, asterbar, build_logo, info, tcolor, tstyle)
 from fieldtools.src.funs import (clean_vols, ensure_mount, find_sdiskpart,
                                  get_mountedlist, get_wav_filenames,
                                  is_faceplate, umount_and_rmdir)
-from fieldtools.src.paths import OUT_DIR, PROJECT_DIR, safe_makedir
+from fieldtools.src.paths import OUT_DIR, safe_makedir, valid_vols_list
 from fieldtools.version import __version__
 from pathlib2 import Path
 
@@ -21,27 +20,15 @@ from pathlib2 import Path
 skip_empty = False  # Wether to skip already empty cards
 safe_copy = False  # Wether to ensure that files exist before allowing formatting
 verbose = False
-
-# Names to listen for (here AM codes)
-AM_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")
-           for i in list(range(1, 61))]
+warn_others = False
 
 # Folders of interest (not currently used)
 folder_names = ['caca' for i in list(range(1, 61))]
 
 valid_directories = [(name, folder_name)
-                     for name, folder_name in zip(AM_list, folder_names)]
-
-# Where to copy the files to
-destination_directory = PROJECT_DIR
-
-# Path to info about recorders
-recorders_dir = PROJECT_DIR / 'resources' / 'fieldwork' / \
-    str(datetime.now().year) / 'already-recorded.csv'
-
+                     for name, folder_name in zip(valid_vols_list, folder_names)]
 
 # Main
-
 
 # Make sure paths exist
 for path in [OUT_DIR]:
@@ -57,6 +44,15 @@ print(
  pattern, currently [AM00, F0000].
 """, tstyle.rojoroto)
 )
+if warn_others:
+    if 'nilomr' in str(OUT_DIR):
+        print(
+            '\n' + info + tstyle.BOLD +
+            tcolor("""
+ This application will not work until you provide 
+ your own paths and settings. See the README.
+ """, tstyle.rojoroto))
+        os._exit(0)
 
 # Store volumes that have been already formatted
 already_done = []

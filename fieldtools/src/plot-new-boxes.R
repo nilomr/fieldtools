@@ -2,21 +2,30 @@
 
 # 1. Settings ====
 rm(list=ls())
-renv::load(project = "/home/nilomr/projects/great-tit-song")
+# Use renv if preferred
+# renv::load(project = "/home/nilomr/projects/great-tit-song")
 setwd("/home/nilomr/projects/great-tit-song")
 options(warn=-1)
 options(readr.num_columns = 0)
 # print('Making and saving plots')
 
-# Libraries
-suppressPackageStartupMessages({
-  library(tidyverse)
-  library(devtools)
-  library(lubridate)
-  library(janitor)
-  library(ggrepel)
-  library(ggmap)
-  library(ggtext)
+
+package_names <- c(
+    "tidyverse",
+    "devtools",
+    "lubridate",
+    "janitor" ,
+    "ggrepel",
+    "ggmap",
+    "ggtext"
+  )
+
+# load packages 
+packages <- lapply(package_names, function(y) {
+  if (!y %in% installed.packages()[, "Package"])  {
+    install.packages(y)
+  }
+  try(require(y, character.only = T), silent = T)
 })
 
 
@@ -41,8 +50,8 @@ newones <-
   read_csv(file.path(sheet_path, "toberecorded.csv"), 
            col_types = cols())
 
-## This is my google key, remove before sharing
-# ggmap::register_google(key = "AIzaSyDfAbhsGQ32byJTmQnpOFjQ_5yr3ViVYeI", write = TRUE)
+## Your google key here
+# ggmap::register_google(key = "GOOGLE-KEY", write = TRUE)
 
 # Centre the map here
 wytham <- c(lon = -1.321898, lat = 51.771250)

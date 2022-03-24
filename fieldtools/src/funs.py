@@ -4,18 +4,16 @@ import inspect
 import os
 import re
 import shutil
-import subprocess
 import sys
 import time
 import warnings
 from getpass import getuser
-from pprint import pprint
 from subprocess import PIPE, Popen, check_output
 
 import pandas as pd
 import psutil
 import pygsheets
-from fieldtools.src.aesthetics import arrow, tcolor, tstyle, info
+from fieldtools.src.aesthetics import arrow, info, tcolor, tstyle
 from fieldtools.src.paths import OUT_DIR, PROJECT_DIR, safe_makedir
 from openpyxl.reader.excel import load_workbook
 from pathlib2 import Path, PosixPath
@@ -142,7 +140,7 @@ def write_gpx(filename, newboxes, tocollect):
     safe_makedir(filename)
     gpxfile = open(str(filename), "w")
     gpxfile.write(
-        '<?xml version="1.0"?><gpx version="1.1" creator="Nilo Merino Recalde" >'
+        '<?xml version="1.0"?><gpx version="1.1" creator="Nilo M. Recalde" >'
     )
 
     try:
@@ -208,7 +206,7 @@ def get_faceplate_update():
     gc = pygsheets.authorize(
         service_file=str(PROJECT_DIR / "private" / "client_secret.json")
     )
-    googlekey = '1NToFktrKMan-jlGYnASMM_AXSv1gwG2dYqjTGCY-6lw'  # The faceplating sheet
+    googlekey = 'ABCDEF'  # The faceplating sheet, substitute your own
     faceplate_info = (
         gc.open_by_key(googlekey)[0]
         .get_as_df(has_header=True, include_tailing_empty=False)
@@ -234,6 +232,10 @@ def get_comments_update():
 
 
 class workers:
+    """
+    A dictionary of google sheet keys, provide your own - this is just a placeholder
+    """
+
     gdict = {  # ! Change every year
         "Anett": "1zTSPOwiY_CdvUpRGpbGxT2k8YH7auHuZnTt4njYQaB0",
         "Joe": "15O1XiJRj_9tVPlrh6mEfGwVdZsbVpeZlmjgKitu2VHk",
@@ -571,7 +573,6 @@ def clean_vols():
     devnull = open(os.devnull, 'wb')
     print(info + 'Cleaning mounted volumes')
     mountdir = os.path.join(os.sep, 'media', getuser()) + os.sep
-    print(any_mounted(mountdir))
     while any_mounted(mountdir):
         print(
             info +

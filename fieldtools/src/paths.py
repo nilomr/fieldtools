@@ -12,8 +12,7 @@ from pathlib2 import Path
 # If you want to use this folder:
 # PROJECT_DIR = Path(__file__).parents[2]
 
-# Else use any project as your data source / destination, independently of the CLI apps directory
-# TODO: get this from higher level user settings
+# Else use any project as your data source / destination, independently of the CLI app's directory
 # Also change in src/plot-new-boxes.R
 PROJECT_DIR = Path('/home/nilomr/projects/great-tit-song')
 
@@ -22,7 +21,13 @@ DATA_DIR = PROJECT_DIR / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
 RESOURCES_DIR = PROJECT_DIR / "resources"
 EGO_DIR = Path(__file__).parents[2] / 'fieldtools' / 'src'
-OUT_DIR = PROJECT_DIR / "resources" / "fieldwork" / str(date.today().year)
+OUT_DIR = PROJECT_DIR / "resources" / "fieldwork" / \
+    str(date.today().year)  # Where to output files other than raw data
+
+# Volume names to listen for:
+# (Here AudioMoth codes)
+valid_vols_list = ['AM' + (str(i) if i > 10 else f"{i:02d}")
+                   for i in list(range(1, 61))]
 
 # ----------------------
 
