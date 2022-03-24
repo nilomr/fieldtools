@@ -3,16 +3,14 @@
 # Dependencies
 
 import os
-import numpy as np
 import subprocess
 import time
 from datetime import date, datetime, timedelta
-from pprint import pprint
-from textwrap import dedent
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from fieldtools.src.aesthetics import (arrow, asterbar, build_logo, info,
+from fieldtools.src.aesthetics import (asterbar, build_logo, info,
                                        menu_aes, print_dict, qmark, tcolor,
                                        tstyle)
 from fieldtools.src.funs import (get_full_faceplate_info, get_nestbox_update,
@@ -22,7 +20,6 @@ from fieldtools.src.funs import (get_full_faceplate_info, get_nestbox_update,
 from fieldtools.src.paths import (DATA_DIR, EGO_DIR, OUT_DIR, PROJECT_DIR,
                                   safe_makedir)
 from fieldtools.version import __version__
-from pathlib import Path
 from PyInquirer import prompt
 from tabulate import tabulate
 
